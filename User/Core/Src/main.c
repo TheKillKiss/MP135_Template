@@ -17,8 +17,10 @@ int main()
 
 void SystemClock_Config(void)
 {
+    HAL_RCC_DeInit();
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
     /** Initializes the RCC Oscillators according to the specified parameters
      * in the RCC_OscInitTypeDef structure.
@@ -86,6 +88,21 @@ void SystemClock_Config(void)
     {
         Error_Handler();
     }
+
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_STGEN;
+    PeriphClkInitStruct.StgenClockSelection = RCC_STGENCLKSOURCE_HSE;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    __HAL_RCC_STGENRO_CLK_ENABLE();
+    __HAL_RCC_STGEN_CLK_ENABLE();
+
+    STGENC->CNTFID0 = HSE_VALUE;
+    STGENC->CNTCR = 1U;
+
+    PL1_SetCounterFrequency(HSE_VALUE);
 }
 
 void Error_Handler(void)
