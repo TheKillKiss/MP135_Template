@@ -3443,6 +3443,9 @@
         <name>Drivers</name>
         <group>
             <name>BSP</name>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_led.c</name>
+            </file>
         </group>
         <group>
             <name>CMSIS</name>
@@ -3453,10 +3456,10 @@
                 <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\mmu_stm32mp13xx.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7.s</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7_rtos.s</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7.c</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7_rtos.c</name>
             </file>
         </group>
         <group>
@@ -3500,6 +3503,165 @@
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_ll_sdmmc.c</name>
             </file>
+        </group>
+    </group>
+    <group>
+        <name>Middlewares</name>
+        <group>
+            <name>UCOS-III</name>
+            <group>
+                <name>CONFIG</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CONFIG\cpu_cfg.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CONFIG\lib_cfg.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CONFIG\os_app_hooks.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CONFIG\os_app_hooks.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CONFIG\os_cfg.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CONFIG\os_cfg_app.h</name>
+                </file>
+            </group>
+            <group>
+                <name>CPU</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu_a.asm</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu_c.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu_cache.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu_core.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu_core.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\CPU\cpu_def.h</name>
+                </file>
+            </group>
+            <group>
+                <name>LIB</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_ascii.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_ascii.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_def.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_math.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_math.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_mem.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_mem.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_mem_a.asm</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_str.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_str.h</name>
+                </file>
+            </group>
+            <group>
+                <name>OS3</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cfg_app.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_core.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_a_vfp-d16.asm</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_a_vfp-d32.asm</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_a_vfp-none.asm</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_c.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_dbg.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_flag.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_mem.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_msg.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_mutex.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_prio.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_q.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_sem.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_stat.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_task.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_tick.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_time.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_tmr.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_trace.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_type.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_var.c</name>
+                </file>
+            </group>
         </group>
     </group>
 </project>
