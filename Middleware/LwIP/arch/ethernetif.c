@@ -45,7 +45,9 @@
 
 #include "lwip/opt.h"
 
-#if 0 /* don't build, this is only a skeleton, see previous comment */
+// #if 0 /* don't build, this is only a skeleton, see previous comment */
+
+#include "ethernetif.h"
 
 #include "lwip/def.h"
 #include "lwip/mem.h"
@@ -56,9 +58,27 @@
 #include "lwip/etharp.h"
 #include "netif/ppp/pppoe.h"
 
+#include "main.h"
+#include "eth.h"
+#include "bsp_YT8531C.h"
+
 /* Define those to better describe your network interface. */
 #define IFNAME0 'e'
 #define IFNAME1 'n'
+
+#define ETH_TX_BUFFER_SIZE    1536U
+#define ETH_RX_BUFFER_SIZE    1524U
+#define ETH_RX_BUFFER_COUNT   (ETH_RX_DESC_CNT * 2U)
+
+static uint8_t eth_tx_buffer[ETH_TX_BUFFER_SIZE];
+static uint8_t eth_rx_buffer[ETH_RX_BUFFER_COUNT][ETH_RX_BUFFER_SIZE];
+
+extern ETH_HandleTypeDef heth1;
+extern ETH_TxPacketConfigTypeDef TxConfig;
+
+static yt8531c_Object_t YT8531C;
+static ETH_BufferTypeDef eth_rx_app_buffer[ETH_RX_BUFFER_COUNT];
+static uint32_t eth_rx_buffer_index;
 
 /**
  * Helper struct to hold private data used to operate your ethernet interface.
@@ -71,8 +91,129 @@ struct ethernetif {
   /* Add whatever per-interface state that is needed here. */
 };
 
-/* Forward declarations. */
-static void  ethernetif_input(struct netif *netif);
+static int32_t ETH_PHY_IO_Init(void)
+{
+    return 0;
+}
+
+static int32_t ETH_PHY_IO_DeInit(void)
+{
+    return 0;
+}
+
+static int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t Reg, uint32_t *pValue)
+{
+    if(HAL_ETH_ReadPHYRegister(&heth1, DevAddr, Reg, pValue) != HAL_OK) {
+      return YT8531C_STATUS_READ_ERROR;
+    }
+
+    return YT8531C_STATUS_OK;
+}
+
+static int32_t ETH_PHY_IO_GetTick(void)
+{
+    return (int32_t)HAL_GetTick();
+}
+
+static int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t Reg, uint32_t Value)
+{
+    if (HAL_ETH_WritePHYRegister(&heth1, DevAddr, Reg, Value) != HAL_OK) {
+        return YT8531C_STATUS_WRITE_ERROR;
+    }
+
+    return YT8531C_STATUS_OK;
+}
+
+static err_t ethernetif_phy_init(void)
+{
+    yt8531c_IOCtx_t ioctx;
+
+    ioctx.Init     = ETH_PHY_IO_Init;
+    ioctx.DeInit   = ETH_PHY_IO_DeInit;
+    ioctx.ReadReg  = ETH_PHY_IO_ReadReg;
+    ioctx.WriteReg = ETH_PHY_IO_WriteReg;
+    ioctx.GetTick  = ETH_PHY_IO_GetTick;
+
+    if (YT8531C_RegisterBusIO(&YT8531C, &ioctx) != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    if (YT8531C_Init(&YT8531C) != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    if (YT8531C_XtalInit() != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    if (YT8531C_ConfigRGMII_Delay(&YT8531C) != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    YT8531C_LED_Init();
+
+    if (YT8531C_DisablePowerDownMode(&YT8531C) != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    if (YT8531C_StartAutoNego(&YT8531C) != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    return ERR_OK;
+}
+
+void HAL_ETH_RxAllocateCallback(ETH_HandleTypeDef *heth, uint8_t **buff)
+{
+    (void)heth;
+
+    *buff = eth_rx_buffer[eth_rx_buffer_index];
+    eth_rx_buffer_index++;
+
+    if (eth_rx_buffer_index >= ETH_RX_BUFFER_COUNT) {
+        eth_rx_buffer_index = 0U;
+    }
+}
+
+void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth,
+                            void **pStart,
+                            void **pEnd,
+                            uint8_t *buff,
+                            uint16_t Length)
+{
+    ETH_BufferTypeDef *rx_buffer;
+    uint32_t buffer_start;
+    uint32_t buffer_offset;
+    uint32_t index;
+
+    (void)heth;
+
+    if ((buff == NULL) || (Length == 0U)) {
+        return;
+    }
+
+    buffer_start = (uint32_t)&eth_rx_buffer[0][0];
+    if (((uint32_t)buff < buffer_start) ||
+        ((uint32_t)buff >= (buffer_start + sizeof(eth_rx_buffer)))) {
+        return;
+    }
+
+    buffer_offset = (uint32_t)buff - buffer_start;
+    index = buffer_offset / ETH_RX_BUFFER_SIZE;
+
+    rx_buffer = &eth_rx_app_buffer[index];
+    rx_buffer->buffer = buff;
+    rx_buffer->len = Length;
+    rx_buffer->next = NULL;
+
+    if (*pStart == NULL) {
+        *pStart = rx_buffer;
+    } else {
+        ((ETH_BufferTypeDef *)(*pEnd))->next = rx_buffer;
+    }
+
+    *pEnd = rx_buffer;
+}
 
 /**
  * In this function, the hardware should be initialized.
@@ -81,40 +222,46 @@ static void  ethernetif_input(struct netif *netif);
  * @param netif the already initialized lwip network interface structure
  *        for this ethernetif
  */
-static void
-low_level_init(struct netif *netif)
+static void low_level_init(struct netif *netif)
 {
-  struct ethernetif *ethernetif = netif->state;
+    struct ethernetif *ethernetif = netif->state;
+    int32_t link_state;
 
-  /* set MAC hardware address length */
-  netif->hwaddr_len = ETHARP_HWADDR_LEN;
+    (void)ethernetif;
 
-  /* set MAC hardware address */
-  netif->hwaddr[0] = ;
-  ...
-  netif->hwaddr[5] = ;
+    netif->hwaddr_len = ETHARP_HWADDR_LEN;
+    netif->hwaddr[0] = 0x00;
+    netif->hwaddr[1] = 0x80;
+    netif->hwaddr[2] = 0xE1;
+    netif->hwaddr[3] = 0x00;
+    netif->hwaddr[4] = 0x00;
+    netif->hwaddr[5] = 0x00;
 
-  /* maximum transfer unit */
-  netif->mtu = 1500;
+    netif->mtu = 1500;
 
-  /* device capabilities */
-  /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
-  netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+    netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
 
-#if LWIP_IPV6 && LWIP_IPV6_MLD
-  /*
-   * For hardware/netifs that implement MAC filtering.
-   * All-nodes link-local is handled by default, so we must let the hardware know
-   * to allow multicast packets in.
-   * Should set mld_mac_filter previously. */
-  if (netif->mld_mac_filter != NULL) {
-    ip6_addr_t ip6_allnodes_ll;
-    ip6_addr_set_allnodes_linklocal(&ip6_allnodes_ll);
-    netif->mld_mac_filter(netif, &ip6_allnodes_ll, NETIF_ADD_MAC_FILTER);
-  }
-#endif /* LWIP_IPV6 && LWIP_IPV6_MLD */
+    MX_ETH1_Init();
 
-  /* Do whatever else is needed to initialize interface. */
+    if (ethernetif_phy_init() != ERR_OK) {
+        return;
+    }
+
+    link_state = YT8531C_GetLinkState(&YT8531C);
+
+    if ((link_state == YT8531C_STATUS_10MBITS_FULLDUPLEX)  ||
+        (link_state == YT8531C_STATUS_10MBITS_HALFDUPLEX)  ||
+        (link_state == YT8531C_STATUS_100MBITS_FULLDUPLEX) ||
+        (link_state == YT8531C_STATUS_100MBITS_HALFDUPLEX) ||
+        (link_state == YT8531C_STATUS_1000MBITS_FULLDUPLEX)||
+        (link_state == YT8531C_STATUS_1000MBITS_HALFDUPLEX)) {
+
+        netif_set_link_up(netif);
+        HAL_ETH_Start(&heth1);
+    } else {
+        netif_set_link_down(netif);
+        HAL_ETH_Stop(&heth1);
+    }
 }
 
 /**
@@ -132,115 +279,171 @@ low_level_init(struct netif *netif)
  *       to become available since the stack doesn't retry to send a packet
  *       dropped because of memory failure (except for the TCP timers).
  */
-
-static err_t
-low_level_output(struct netif *netif, struct pbuf *p)
+static err_t low_level_output(struct netif *netif, struct pbuf *p)
 {
-  struct ethernetif *ethernetif = netif->state;
-  struct pbuf *q;
+    struct pbuf *q;
+    uint8_t *buffer;
+    uint32_t framelen = 0;
+    ETH_BufferTypeDef txbuffer;
+    HAL_StatusTypeDef hal_status;
 
-  initiate transfer();
-
-#if ETH_PAD_SIZE
-  pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
-#endif
-
-  for (q = p; q != NULL; q = q->next) {
-    /* Send the data from the pbuf to the interface, one pbuf at a
-       time. The size of the data in each pbuf is kept in the ->len
-       variable. */
-    send data from(q->payload, q->len);
-  }
-
-  signal that packet should be sent();
-
-  MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
-  if (((u8_t *)p->payload)[0] & 1) {
-    /* broadcast or multicast packet*/
-    MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
-  } else {
-    /* unicast packet */
-    MIB2_STATS_NETIF_INC(netif, ifoutucastpkts);
-  }
-  /* increase ifoutdiscards or ifouterrors on error */
+    (void)netif;
 
 #if ETH_PAD_SIZE
-  pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
+    pbuf_remove_header(p, ETH_PAD_SIZE);
 #endif
 
-  LINK_STATS_INC(link.xmit);
+    if (p->tot_len > ETH_TX_BUFFER_SIZE) {
+#if ETH_PAD_SIZE
+        pbuf_add_header(p, ETH_PAD_SIZE);
+#endif
+        LINK_STATS_INC(link.lenerr);
+        return ERR_BUF;
+    }
 
-  return ERR_OK;
+    buffer = eth_tx_buffer;
+
+    for (q = p; q != NULL; q = q->next) {
+        memcpy(&buffer[framelen], q->payload, q->len);
+        framelen += q->len;
+    }
+
+#if defined(CACHE_USE)
+    SCB_CleanDCache_by_Addr((uint32_t *)eth_tx_buffer, (int32_t)framelen);
+#endif
+
+    memset(&txbuffer, 0, sizeof(txbuffer));
+    txbuffer.buffer = eth_tx_buffer;
+    txbuffer.len    = framelen;
+    txbuffer.next   = NULL;
+
+    TxConfig.Length = framelen;
+    TxConfig.TxBuffer = &txbuffer;
+    TxConfig.pData = NULL;
+
+    hal_status = HAL_ETH_Transmit(&heth1, &TxConfig, 100U);
+
+#if ETH_PAD_SIZE
+    pbuf_add_header(p, ETH_PAD_SIZE);
+#endif
+
+    if (hal_status != HAL_OK) {
+        LINK_STATS_INC(link.err);
+        return ERR_IF;
+    }
+
+    MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
+
+    if (((u8_t *)p->payload)[0] & 1) {
+        MIB2_STATS_NETIF_INC(netif, ifoutnucastpkts);
+    } else {
+        MIB2_STATS_NETIF_INC(netif, ifoutucastpkts);
+    }
+
+    LINK_STATS_INC(link.xmit);
+
+    return ERR_OK;
 }
 
-/**
- * Should allocate a pbuf and transfer the bytes of the incoming
- * packet from the interface into the pbuf.
- *
- * @param netif the lwip network interface structure for this ethernetif
- * @return a pbuf filled with the received packet (including MAC header)
- *         NULL on memory error
- */
-static struct pbuf *
-low_level_input(struct netif *netif)
+static struct pbuf *low_level_input(struct netif *netif)
 {
-  struct ethernetif *ethernetif = netif->state;
-  struct pbuf *p, *q;
-  u16_t len;
+    struct pbuf *p = NULL;
+    struct pbuf *q;
+    ETH_BufferTypeDef *rx_buffer;
+    ETH_BufferTypeDef *rx_buffer_it;
+    uint16_t len = 0;
+    uint16_t copied = 0;
+    uint8_t *payload;
 
-  /* Obtain the size of the packet and put it into the "len"
-     variable. */
-  len = ;
+    (void)netif;
 
-#if ETH_PAD_SIZE
-  len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
-#endif
+    rx_buffer = NULL;
 
-  /* We allocate a pbuf chain of pbufs from the pool. */
-  p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
-
-  if (p != NULL) {
-
-#if ETH_PAD_SIZE
-    pbuf_remove_header(p, ETH_PAD_SIZE); /* drop the padding word */
-#endif
-
-    /* We iterate over the pbuf chain until we have read the entire
-     * packet into the pbuf. */
-    for (q = p; q != NULL; q = q->next) {
-      /* Read enough bytes to fill this pbuf in the chain. The
-       * available data in the pbuf is given by the q->len
-       * variable.
-       * This does not necessarily have to be a memcpy, you can also preallocate
-       * pbufs for a DMA-enabled MAC and after receiving truncate it to the
-       * actually received size. In this case, ensure the tot_len member of the
-       * pbuf is the sum of the chained pbuf len members.
-       */
-      read data into(q->payload, q->len);
+    if (HAL_ETH_ReadData(&heth1, (void **)&rx_buffer) != HAL_OK) {
+        return NULL;
     }
-    acknowledge that packet has been read();
+
+    if (rx_buffer == NULL) {
+        return NULL;
+    }
+
+    rx_buffer_it = rx_buffer;
+
+    while (rx_buffer_it != NULL) {
+        len += rx_buffer_it->len;
+        rx_buffer_it = rx_buffer_it->next;
+    }
+
+    if (len == 0U) {
+        return NULL;
+    }
+
+#if ETH_PAD_SIZE
+    len += ETH_PAD_SIZE;
+#endif
+
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
+    if (p == NULL) {
+        LINK_STATS_INC(link.memerr);
+        LINK_STATS_INC(link.drop);
+        MIB2_STATS_NETIF_INC(netif, ifindiscards);
+        return NULL;
+    }
+
+#if ETH_PAD_SIZE
+    pbuf_remove_header(p, ETH_PAD_SIZE);
+#endif
+
+    rx_buffer_it = rx_buffer;
+    q = p;
+    copied = 0;
+
+    while ((q != NULL) && (rx_buffer_it != NULL)) {
+        uint16_t copy_len;
+        uint16_t remain_in_q;
+
+        payload = (uint8_t *)q->payload;
+        remain_in_q = q->len;
+
+        while ((remain_in_q > 0U) && (rx_buffer_it != NULL)) {
+            copy_len = rx_buffer_it->len;
+
+            if (copy_len > remain_in_q) {
+                copy_len = remain_in_q;
+            }
+
+#if defined(CACHE_USE)
+            SCB_InvalidateDCache_by_Addr((uint32_t *)rx_buffer_it->buffer,
+                                          (int32_t)rx_buffer_it->len);
+#endif
+
+            memcpy(payload, rx_buffer_it->buffer, copy_len);
+
+            payload += copy_len;
+            copied += copy_len;
+            remain_in_q -= copy_len;
+
+            rx_buffer_it = rx_buffer_it->next;
+        }
+
+        q = q->next;
+    }
+
+#if ETH_PAD_SIZE
+    pbuf_add_header(p, ETH_PAD_SIZE);
+#endif
 
     MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
+
     if (((u8_t *)p->payload)[0] & 1) {
-      /* broadcast or multicast packet*/
-      MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
+        MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
     } else {
-      /* unicast packet*/
-      MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
+        MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
     }
-#if ETH_PAD_SIZE
-    pbuf_add_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
-#endif
 
     LINK_STATS_INC(link.recv);
-  } else {
-    drop packet();
-    LINK_STATS_INC(link.memerr);
-    LINK_STATS_INC(link.drop);
-    MIB2_STATS_NETIF_INC(netif, ifindiscards);
-  }
 
-  return p;
+    return p;
 }
 
 /**
@@ -252,14 +455,14 @@ low_level_input(struct netif *netif)
  *
  * @param netif the lwip network interface structure for this ethernetif
  */
-static void
+void
 ethernetif_input(struct netif *netif)
 {
-  struct ethernetif *ethernetif;
-  struct eth_hdr *ethhdr;
+  // struct ethernetif *ethernetif;
+  // struct eth_hdr *ethhdr;
   struct pbuf *p;
 
-  ethernetif = netif->state;
+  // ethernetif = netif->state;
 
   /* move received packet into a new pbuf */
   p = low_level_input(netif);
@@ -309,7 +512,7 @@ ethernetif_init(struct netif *netif)
    * The last argument should be replaced with your link speed, in units
    * of bits per second.
    */
-  MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+  MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, 1000000000);
 
   netif->state = ethernetif;
   netif->name[0] = IFNAME0;
@@ -334,4 +537,33 @@ ethernetif_init(struct netif *netif)
   return ERR_OK;
 }
 
-#endif /* 0 */
+void ethernetif_update_link(struct netif *netif)
+{
+    int32_t link_state;
+
+    link_state = YT8531C_GetLinkState(&YT8531C);
+
+    switch (link_state) {
+    case YT8531C_STATUS_10MBITS_FULLDUPLEX:
+    case YT8531C_STATUS_10MBITS_HALFDUPLEX:
+    case YT8531C_STATUS_100MBITS_FULLDUPLEX:
+    case YT8531C_STATUS_100MBITS_HALFDUPLEX:
+    case YT8531C_STATUS_1000MBITS_FULLDUPLEX:
+    case YT8531C_STATUS_1000MBITS_HALFDUPLEX:
+        if (!netif_is_link_up(netif)) {
+            netif_set_link_up(netif);
+            HAL_ETH_Start(&heth1);
+        }
+        break;
+
+    case YT8531C_STATUS_LINK_DOWN:
+    default:
+        if (netif_is_link_up(netif)) {
+            HAL_ETH_Stop(&heth1);
+            netif_set_link_down(netif);
+        }
+        break;
+    }
+}
+
+// #endif /* 0 */

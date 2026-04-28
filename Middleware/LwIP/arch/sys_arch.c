@@ -3,11 +3,15 @@
 #include "lwip/err.h"
 #include "lwip/def.h"
 #include "lwip/mem.h"
+#include "lwip/arch.h"
 
 #include "os.h"
 #include "cpu.h"
 
 #include "main.h"
+
+#include <stdarg.h>
+#include <stdio.h>
 
 /*
  * This sys_arch.c is for uC/OS-III.
@@ -73,6 +77,8 @@ static LWIP_UCOS_MBOX_CTRL g_lwip_mbox_pool[LWIP_SYS_MAX_MBOX];
 static LWIP_UCOS_TASK      g_lwip_task_pool[LWIP_SYS_MAX_TASKS];
 
 static sys_sem_t g_netconn_sem;
+
+LWIP_DECLARE_MEMORY_ALIGNED(memp_memory_LWIP_HEAP_RAM_base, MEM_SIZE + 1024u);
 
 /* ------------------------------------------------------------
  * Time convert helpers
@@ -866,6 +872,32 @@ sys_prot_t sys_arch_protect(void)
     CPU_CRITICAL_ENTER();
 
     return (sys_prot_t)cpu_sr;
+}
+
+void sys_arch_unprotect(sys_prot_t pval)
+{
+    CPU_SR cpu_sr;
+
+    cpu_sr = (CPU_SR)pval;
+    CPU_CRITICAL_EXIT();
+}
+
+void lwip_win32_platform_diag(const char *format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    (void)vprintf(format, args);
+    va_end(args);
+}
+
+unsigned int lwip_port_rand(void)
+{
+    static uint32_t seed = 0x12345678u;
+
+    seed = (seed * 1664525u) + 1013904223u + HAL_GetTick();
+
+    return seed;
 }
 
 /* ------------------------------------------------------------

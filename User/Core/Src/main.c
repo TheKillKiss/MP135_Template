@@ -1,5 +1,7 @@
 #include "main.h"
 #include "bsp_led.h"
+#include "ethernetif.h"
+#include "lwip/tcpip.h"
 #include "eth.h"
 #include "os.h"
 
@@ -11,9 +13,16 @@ void SystemClock_Config(void);
 static OS_TCB  LedTaskTCB;
 static CPU_STK LedTaskStk[LED_TASK_STK_SIZE];
 
-static void LedTask(void *p_arg);
+struct netif gnetif;
+
+#define ETHIF_TASK_PRIO        8u
+#define ETHIF_TASK_STK_SIZE    1024u
+
+static OS_TCB  EthIfTaskTCB;
+static CPU_STK EthIfTaskStk[ETHIF_TASK_STK_SIZE];
 
 static void LedTask(void *p_arg);
+static void EthIfTask(void *p_arg);
 
 int main(void)
 {
@@ -23,13 +32,34 @@ int main(void)
 
     // SystemClock_Config();
     
-    MX_ETH1_Init();
+    // MX_ETH1_Init();
     OSInit(&err);
     if (err != OS_ERR_NONE) {
         Error_Handler();
     }
 
     BSP_LED_Init();
+
+    tcpip_init(NULL, NULL);
+
+    ip_addr_t ipaddr;
+    ip_addr_t netmask;
+    ip_addr_t gw;
+
+    IP4_ADDR(&ipaddr,  192, 168, 6, 6);
+    IP4_ADDR(&netmask, 255, 255, 255, 0);
+    IP4_ADDR(&gw,      192, 168, 6, 1);
+
+    netif_add(&gnetif,
+            &ipaddr,
+            &netmask,
+            &gw,
+            NULL,
+            ethernetif_init,
+            tcpip_input);
+
+    netif_set_default(&gnetif);
+    netif_set_up(&gnetif);
 
     OSTaskCreate((OS_TCB     *)&LedTaskTCB,
                  (CPU_CHAR   *)"LED Task",
@@ -45,6 +75,20 @@ int main(void)
                  (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
                  (OS_ERR     *)&err);
 
+    OSTaskCreate((OS_TCB     *)&EthIfTaskTCB,
+                 (CPU_CHAR   *)"EthIf Task",
+                 (OS_TASK_PTR )EthIfTask,
+                 (void       *)0,
+                 (OS_PRIO     )ETHIF_TASK_PRIO,
+                 (CPU_STK    *)&EthIfTaskStk[0],
+                 (CPU_STK_SIZE)ETHIF_TASK_STK_SIZE / 10,
+                 (CPU_STK_SIZE)ETHIF_TASK_STK_SIZE,
+                 (OS_MSG_QTY  )0,
+                 (OS_TICK     )0,
+                 (void       *)0,
+                 (OS_OPT      )OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR,
+                 (OS_ERR     *)&err);
+
     if (err != OS_ERR_NONE) {
         Error_Handler();
     }
@@ -53,6 +97,25 @@ int main(void)
 
     while (1) {
 
+    }
+}
+
+static void EthIfTask(void *p_arg)
+{
+    OS_ERR err;
+
+    (void)p_arg;
+
+    while (1) {
+        ethernetif_update_link(&gnetif);
+
+        if (netif_is_link_up(&gnetif)) {
+            ethernetif_input(&gnetif);
+        }
+
+        OSTimeDlyHMSM(0u, 0u, 0u, 1u,
+                      OS_OPT_TIME_HMSM_STRICT,
+                      &err);
     }
 }
 

@@ -70,6 +70,11 @@ extern unsigned char memp_memory_LWIP_HEAP_RAM_base[];
 /* PBUF_POOL_BUFSIZE: the size of each pbuf in the pbuf pool. */
 #define PBUF_POOL_BUFSIZE       1536
 
+/* Pad Ethernet frames so the IPv4 header is 32-bit aligned after the
+ * 14-byte Ethernet header is removed. Cortex-A faults on unaligned word reads.
+ */
+#define ETH_PAD_SIZE            2
+
 /* LWIP_SUPPORT_CUSTOM_PBUF == 1: to pass directly MAC Rx buffers to the stack 
    no copy is needed */
 #define LWIP_SUPPORT_CUSTOM_PBUF      1
@@ -109,7 +114,8 @@ extern unsigned char memp_memory_LWIP_HEAP_RAM_base[];
 
 
 /* ---------- Statistics options ---------- */
-#define LWIP_STATS 0
+#define LWIP_STATS 1
+#define MIB2_STATS 1
 
 /* ---------- link callback options ---------- */
 /* LWIP_NETIF_LINK_CALLBACK==1: Support a callback function from an interface

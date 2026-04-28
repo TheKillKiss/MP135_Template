@@ -2404,6 +2404,9 @@
                     <name>$PROJ_DIR$\..\Middleware\LwIP\arch\ethernetif.c</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\ethernetif.h</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\Middleware\LwIP\arch\lwipopts.h</name>
                 </file>
                 <file>

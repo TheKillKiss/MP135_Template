@@ -23,9 +23,12 @@
 
 #if defined ( __ICCARM__ ) /*!< IAR Compiler */
 
-#pragma location=0x30000000
+//#pragma location=0x30000000
+__attribute__((aligned(32)))
 ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location=0x30000100
+
+//#pragma location=0x30000100
+__attribute__((aligned(32)))
 ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
 #elif defined ( __CC_ARM )  /* MDK ARM Compiler */
@@ -59,7 +62,11 @@ void MX_ETH1_Init(void)
    static uint8_t MACAddr[6];
 
   /* USER CODE BEGIN ETH1_Init 1 */
-
+  RCC->MP_AHB6ENSETR =
+      RCC_MP_AHB6ENSETR_ETH1MACEN
+    | RCC_MP_AHB6ENSETR_ETH1RXEN
+    | RCC_MP_AHB6ENSETR_ETH1TXEN
+    | RCC_MP_AHB6ENSETR_ETH1CKEN;
   /* USER CODE END ETH1_Init 1 */
   heth1.Instance = ETH;
   MACAddr[0] = 0x00;
