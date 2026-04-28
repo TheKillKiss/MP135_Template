@@ -1119,21 +1119,13 @@ __tx_irq_handler
   SECTION .intvec:CODE:NOROOT(2)
   PUBLIC  __vector
   PUBLIC  Reset_Handler
-#ifdef AZURE_RTOS
-  EXTERN __tx_undefined
-  EXTERN PUBWEAK __tx_swi_interrupt
-  EXTERN __tx_prefetch_handler
-  EXTERN __tx_abort_handler
-  EXTERN __tx_irq_handler
-  EXTERN __tx_fiq_handler
-#else
-  //EXTERN  Undef_Handler
-  EXTERN PUBWEAK  FreeRTOS_SWI_Handler
-  //EXTERN PAbt_Handler
-  //EXTERN DAbt_Handler
-  EXTERN FreeRTOS_IRQ_Handler
-  EXTERN FIQ_Handler
-#endif
+  
+  EXTERN  OS_CPU_ARM_ExceptUndefInstrHndlr
+  EXTERN  OS_CPU_ARM_ExceptSwiHndlr
+  EXTERN  OS_CPU_ARM_ExceptPrefetchAbortHndlr
+  EXTERN  OS_CPU_ARM_ExceptDataAbortHndlr
+  EXTERN  OS_CPU_ARM_ExceptIrqHndlr
+  EXTERN  OS_CPU_ARM_ExceptFiqHndlr   
   /* PUBLIC  Vectors */
 
   DATA
@@ -1145,23 +1137,14 @@ __vector:                       ; Make this a DATA label, so that stack usage
 
 //Vectors:
   LDR    PC, =Reset_Handler
-#ifdef AZURE_RTOS
-  LDR    PC, =__tx_undefined
-  LDR    PC, =__tx_swi_interrupt
-  LDR    PC, =__tx_prefetch_handler
-  LDR    PC, =__tx_abort_handler
-  NOP
-  LDR    PC, =__tx_irq_handler
-  LDR    PC, =__tx_fiq_handler
-#else
-  LDR    PC, =Undef_Handler
-  LDR    PC, =FreeRTOS_SWI_Handler
-  LDR    PC, =PAbt_Handler
-  LDR    PC, =DAbt_Handler
-  NOP
-  LDR    PC, =FreeRTOS_IRQ_Handler
-  LDR    PC, =FIQ_Handler
-#endif
+  
+  LDR    PC, =OS_CPU_ARM_ExceptUndefInstrHndlr   ; Undefined
+  LDR    PC, =OS_CPU_ARM_ExceptSwiHndlr          ; SVC
+  LDR    PC, =OS_CPU_ARM_ExceptPrefetchAbortHndlr ; Prefetch Abort
+  LDR    PC, =OS_CPU_ARM_ExceptDataAbortHndlr    ; Data Abort
+  NOP                                           ; Reserved
+  LDR    PC, =OS_CPU_ARM_ExceptIrqHndlr          ; IRQ
+  LDR    PC, =OS_CPU_ARM_ExceptFiqHndlr          ; FIQ
 
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset

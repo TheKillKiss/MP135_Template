@@ -2407,15 +2407,6 @@
                     <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_math.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_mem.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_mem.h</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_mem_a.asm</name>
-                </file>
-                <file>
                     <name>$PROJ_DIR$\..\Middleware\UCOS-III\LIB\lib_str.c</name>
                 </file>
                 <file>
@@ -2437,13 +2428,7 @@
                     <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu.h</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_a_vfp-d16.asm</name>
-                </file>
-                <file>
                     <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_a_vfp-d32.asm</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_a_vfp-none.asm</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\Middleware\UCOS-III\OS3\os_cpu_c.c</name>

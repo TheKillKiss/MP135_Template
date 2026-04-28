@@ -44,17 +44,15 @@
 /** @addtogroup STM32MP13xx_System_Private_Includes
   * @{
   */
-#if defined(AZURE_RTOS)
+
 #include "stm32mp13xx_hal.h"
-#elif defined(FreeRTOS)
 #include "stm32mp13xx.h"
-#endif
+
 #include "irq_ctrl.h"
 #include "math.h"
-#if defined(FreeRTOS)
-#include "FreeRTOSConfig.h"
-#include "portmacro.h"
-#endif
+
+#include "os.h"
+
 
 /**
   * @}
@@ -147,34 +145,31 @@ extern void ZeroBss( void );
   * @{
   */
 
-#if defined(AZURE_RTOS) || defined(FreeRTOS)
 static void EnableSecurePhysicalTimer(void)
 {
   /* Stop Timer */
   PL1_SetControl(0x0);
 
-  PL1_SetCounterFrequency(HSI_VALUE);
+  PL1_SetCounterFrequency(HSE_VALUE);
 
   /* Initialize Counter */
-  PL1_SetLoadValue(HSI_VALUE/1000);
+  PL1_SetLoadValue(HSE_VALUE/1000);
 
   /* Disable corresponding IRQ */
   IRQ_Disable(SecurePhyTimer_IRQn);
   IRQ_ClearPending(SecurePhyTimer_IRQn);
 
-#if defined(FreeRTOS)
-  IRQ_SetPriority(SecurePhyTimer_IRQn, configUNIQUE_INTERRUPT_PRIORITIES - 2);
-#else
-  IRQ_SetPriority(SecurePhyTimer_IRQn, 1 << 4);
-#endif
+
+  IRQ_SetPriority(SecurePhyTimer_IRQn, 0xA0);
+
   /* Set edge-triggered IRQ */
   IRQ_SetMode(SecurePhyTimer_IRQn, IRQ_MODE_TRIG_EDGE);
 
   /* Enable corresponding interrupt */
   IRQ_Enable(SecurePhyTimer_IRQn);
-
+  
+  PL1_SetControl(0x1);
 }
-#endif
 
 /**
   * @brief  Calculates PLL1 P frequency based on internal RCC configuration
@@ -251,74 +246,13 @@ __weak void SystemInit_Interrupts_SoftIRQn_Handler(uint32_t Software_Interrupt_I
 
 void SecurePhysicalTimer_IRQHandler(void)
 {
-#if defined(FreeRTOS)
+
   IRQ_ClearPending((IRQn_ID_t)SecurePhyTimer_IRQn);
-#else
-  IRQ_ClearPending(SecurePhyTimer_IRQn);
-#endif
-#if 0
-/* Simple version
-   same as ARM CMSIS-Core-A for RTX OS
+  PL1_SetLoadValue((HSE_VALUE /1000U) + PL1_GetCurrentValue());
 
-   Doesn't compensate for IRQ processing time (hardware and software)
-
-   Measured error with non optimized compilation (-O0) is
-     193 CLK/tick = 193/48000 = 0.40 % = 4ms/s
-   Measured error with optimized compilation (-O2) is
-     110 CLK/tick = 110/48000 = 0.23 % = 2.3ms/s
-*/
-
-  PL1_SetLoadValue(HSI_VALUE/1000);
-#endif /* 0 */
-
-#if 0
-/* Assembly version
-   Best result whatever optimization used for compilation
-
-   Compensates for IRQ processing time (hardware and software) by adding current counter value
-     which decrements below 0 after IRQ trigger and thus contains -(time since IRQ triggered)
-   As if is basic assembly, it is not semsitive to optimization setting
-
-   Measured error with non optimized compilation (-O0) is
-     6 CLK/tick = 6/48000 = 0.01 % = 0.1ms/s
-   Measured error with optimized compilation (-O2) is
-     6 CLK/tick = 6/48000 = 0.01 % = 0.1ms/s
-*/
-
-  __ASM volatile("MRC p15, 0, r3, c14, c2, 0\n"
-                 "ADD r3, r3, #47872\n"
-                 "ADD r3, r3, #128\n"
-                 "MCR p15, 0, r3, c14, c2, 0":::"r3");
-#endif /* 0 */
-
-/* C version with IRQ processing time compensation.
-   Same method as assembly version but written in C using CMSIS-Core-A API.
-
-   Same result as Assembly version when optimized because functions are inlined and generated code is same as assembly version
-   Result is not good when not optimized because "inline" functions are not inlined by GCC when optimization is off.
-     So time for functions calls between Counter read and counter write are not compensated
-
-   Compensates for IRQ processing time (hardware and software) by adding current counter value
-     which decrements below 0 after IRQ trigger and thus contains -(time since IRQ triggered)
-
-   Measured error with non optimized compilation (-O0) is
-     34 CLK/tick = 34/48000 = 0.07 % = 0.7ms/s
-   Measured error with optimized compilation (-O2) is
-     6 CLK/tick = 6/48000 = 0.01 % = 0.1ms/s
-*/
-
-  PL1_SetLoadValue((HSI_VALUE/1000U) + PL1_GetCurrentValue());
-
-#if defined(AZURE_RTOS)
-  __asm__ volatile
-  (
-     "BL     _tx_timer_interrupt                  \n" //@  ThreadX Timer interrupt handler
-  );
-#elif defined(FreeRTOS)
-  FreeRTOS_Tick_Handler();
-#else
+  OSTimeTick();
   HAL_IncTick();
-#endif
+
 }
 
 /**
@@ -326,71 +260,86 @@ void SecurePhysicalTimer_IRQHandler(void)
   * @param  None
   * @retval None
   */
-#if defined(AZURE_RTOS)
-void IRQ_Handler(void) {
-#elif defined(FreeRTOS)
-void IRQ_Handler(uint32_t ulICCIAR) {
-#else
-void __attribute__ ((interrupt ("IRQ")))IRQ_Handler(void) {
-#endif
+/**
+  * @brief  Generic IRQ Handler for uC/OS
+  * @param  None
+  * @retval None
+  */
+void IRQ_Handler(void)
+{
+    uint32_t ItId;
+    IRQHandler_t handler;
+    
+    OSIntEnter();
 
-  uint32_t ItId;
-  IRQHandler_t handler;
-#if defined(AZURE_RTOS)
-  while (1)
-  {
-    /* Get highest pending Interrupt Id from GIC driver*/
-    ItId = IRQ_GetActiveIRQ();
-#elif defined(FreeRTOS)
-    ItId = ulICCIAR;
-#endif
-
-    if (ItId <= GIC_HIGHEST_INTERRUPT_VALUE) /* Highest value of GIC Valid Interrupt */
+    while (1)
     {
-      /* Check validity of IRQ */
-      if (ItId >= (uint32_t)MAX_IRQ_n)
-      {
-        SystemInit_IRQ_ErrorHandler();
-      }
-      else
-      {
-        /* Find appropriate IRQ Handler (Require registration before!) */
-#if defined(AZURE_RTOS)
-        handler = IRQ_GetHandler(ItId);
-#elif defined(FreeRTOS)
-        handler = IRQ_GetHandler((IRQn_ID_t)ItId);
-#endif
-        if (handler!=NULL)
+        /*
+         * Get highest pending Interrupt ID from GIC.
+         * For Cortex-A7 + GIC, this usually reads ICCIAR.
+         */
+        ItId = IRQ_GetActiveIRQ();
+
+        /*
+         * Valid interrupt ID range.
+         */
+        if (ItId <= GIC_HIGHEST_INTERRUPT_VALUE)
         {
-          /* Call IRQ Handler */
-          handler();
+            /*
+             * Check IRQ number validity.
+             */
+            if (ItId >= (uint32_t)MAX_IRQ_n)
+            {
+                SystemInit_IRQ_ErrorHandler();
+            }
+            else
+            {
+                /*
+                 * Find registered IRQ handler.
+                 */
+                handler = IRQ_GetHandler((IRQn_ID_t)ItId);
+
+                if (handler != NULL)
+                {
+                    /*
+                     * Call the registered interrupt service routine.
+                     */
+                    handler();
+                }
+                else
+                {
+                    /*
+                     * No handler registered for this IRQ.
+                     */
+                    SystemInit_IRQ_ErrorHandler();
+                }
+            }
+
+            /*
+             * End Of Interrupt.
+             * Must be called after the ISR is handled.
+             */
+            IRQ_EndOfInterrupt(ItId);
         }
         else
         {
-          /* Un register Handler , error ! */
-          SystemInit_IRQ_ErrorHandler();
+            /*
+             * GIC returns special acknowledge value when no more pending IRQ.
+             */
+            if (ItId == GIC_ACKNOWLEDGE_RESPONSE)
+            {
+                break;
+            }
+            else
+            {
+                /*
+                 * Spurious IRQ, usually 1022.
+                 */
+                SystemInit_IRQ_ErrorHandler();
+            }
         }
-      }
-
-      /* End Acknowledge interrupt */
-#if defined(AZURE_RTOS)
-      IRQ_EndOfInterrupt(ItId);
     }
-    else
-    {
-      /* Normal case: whenever there is no more pending IRQ , IAR returns ACKNOWLEDGE special IRQ value */
-      if (ItId == GIC_ACKNOWLEDGE_RESPONSE)
-      {
-        break;
-      }
-      /* Spurious IRQ Value (1022)  ... */
-      else
-      {
-        SystemInit_IRQ_ErrorHandler();
-      }
-    }
-#endif
-  }
+    OSIntExit();
 }
 
 /**
@@ -483,16 +432,14 @@ void SystemInit (void)
 
   /* Set Interrupt vectors */
   for (i = 0U; i < (uint32_t)MAX_IRQ_n ; i++)
- {
- #if defined(AZURE_RTOS) 
-    IRQ_SetHandler(i, IRQ_Vector_Table[i]);
- #elif defined(FreeRTOS)
+  {
+
     IRQ_SetHandler((IRQn_ID_t)i, IRQ_Vector_Table[i]);
- #endif
+
   }
-#if defined(AZURE_RTOS) || defined(FreeRTOS)
+  SystemCoreClockUpdate();
   EnableSecurePhysicalTimer(); /* Used as Tick */
-#endif
+
 #endif
 }
 

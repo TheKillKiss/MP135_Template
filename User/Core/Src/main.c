@@ -1,17 +1,71 @@
 #include "main.h"
 #include "bsp_led.h"
+#include "os.h"
 
 void SystemClock_Config(void);
 
-int main()
-{       
+#define LED_TASK_PRIO      10u
+#define LED_TASK_STK_SIZE  512u
+
+static OS_TCB  LedTaskTCB;
+static CPU_STK LedTaskStk[LED_TASK_STK_SIZE];
+
+static void LedTask(void *p_arg);
+
+static void LedTask(void *p_arg);
+
+int main(void)
+{
+    OS_ERR err;
+
     HAL_Init();
-    SystemClock_Config();
+
+    // SystemClock_Config();
+
+    OSInit(&err);
+    if (err != OS_ERR_NONE) {
+        Error_Handler();
+    }
+
     BSP_LED_Init();
 
-    while(1){
+    OSTaskCreate((OS_TCB     *)&LedTaskTCB,
+                 (CPU_CHAR   *)"LED Task",
+                 (OS_TASK_PTR ) LedTask,
+                 (void       *) 0,
+                 (OS_PRIO     ) LED_TASK_PRIO,
+                 (CPU_STK    *)&LedTaskStk[0],
+                 (CPU_STK_SIZE) LED_TASK_STK_SIZE / 10u,
+                 (CPU_STK_SIZE) LED_TASK_STK_SIZE,
+                 (OS_MSG_QTY  ) 0u,
+                 (OS_TICK     ) 0u,
+                 (void       *) 0,
+                 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                 (OS_ERR     *)&err);
+
+    if (err != OS_ERR_NONE) {
+        Error_Handler();
+    }
+
+    OSStart(&err);
+
+    while (1) {
+
+    }
+}
+
+static void LedTask(void *p_arg)
+{
+    OS_ERR err;
+
+    (void)p_arg;
+
+    while (1) {
         BSP_LED_Toggle();
-        HAL_Delay(300);
+
+        OSTimeDlyHMSM(0u, 0u, 0u, 500u,
+                      OS_OPT_TIME_HMSM_STRICT,
+                      &err);
     }
 }
 
@@ -25,11 +79,8 @@ void SystemClock_Config(void)
     /** Initializes the RCC Oscillators according to the specified parameters
      * in the RCC_OscInitTypeDef structure.
      */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue = 16;
-    RCC_OscInitStruct.HSIDivValue = RCC_HSI_DIV1;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLL12SOURCE_HSE;
     RCC_OscInitStruct.PLL.PLLM = 2;
@@ -45,27 +96,36 @@ void SystemClock_Config(void)
     RCC_OscInitStruct.PLL2.PLLN = 40;
     RCC_OscInitStruct.PLL2.PLLP = 2;
     RCC_OscInitStruct.PLL2.PLLQ = 2;
-    RCC_OscInitStruct.PLL2.PLLR = 2;
+    RCC_OscInitStruct.PLL2.PLLR = 1;
     RCC_OscInitStruct.PLL2.PLLFRACV = 0;
     RCC_OscInitStruct.PLL2.PLLMODE = RCC_PLL_INTEGER;
     RCC_OscInitStruct.PLL3.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL3.PLLSource = RCC_PLL3SOURCE_HSI;
-    RCC_OscInitStruct.PLL3.PLLM = 4;
-    RCC_OscInitStruct.PLL3.PLLN = 25;
-    RCC_OscInitStruct.PLL3.PLLP = 2;
+    RCC_OscInitStruct.PLL3.PLLSource = RCC_PLL3SOURCE_HSE;
+    RCC_OscInitStruct.PLL3.PLLM = 2;
+    RCC_OscInitStruct.PLL3.PLLN = 50;
+    RCC_OscInitStruct.PLL3.PLLP = 3;
     RCC_OscInitStruct.PLL3.PLLQ = 2;
     RCC_OscInitStruct.PLL3.PLLR = 2;
     RCC_OscInitStruct.PLL3.PLLRGE = RCC_PLL3IFRANGE_1;
     RCC_OscInitStruct.PLL3.PLLFRACV = 0;
     RCC_OscInitStruct.PLL3.PLLMODE = RCC_PLL_INTEGER;
-    RCC_OscInitStruct.PLL4.PLLState = RCC_PLL_NONE;
+    RCC_OscInitStruct.PLL4.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL4.PLLSource = RCC_PLL4SOURCE_HSE;
+    RCC_OscInitStruct.PLL4.PLLM = 2;
+    RCC_OscInitStruct.PLL4.PLLN = 62;
+    RCC_OscInitStruct.PLL4.PLLP = 6;
+    RCC_OscInitStruct.PLL4.PLLQ = 1;
+    RCC_OscInitStruct.PLL4.PLLR = 1;
+    RCC_OscInitStruct.PLL4.PLLRGE = RCC_PLL4IFRANGE_1;
+    RCC_OscInitStruct.PLL4.PLLFRACV = 4096;
+    RCC_OscInitStruct.PLL4.PLLMODE = RCC_PLL_FRACTIONAL;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
-        Error_Handler();
+      Error_Handler();
     }
 
     /** RCC Clock Config
-     */
+    */
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_ACLK
                                 |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                                 |RCC_CLOCKTYPE_PCLK3|RCC_CLOCKTYPE_PCLK4
@@ -86,7 +146,7 @@ void SystemClock_Config(void)
 
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct) != HAL_OK)
     {
-        Error_Handler();
+      Error_Handler();
     }
 
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_STGEN;
