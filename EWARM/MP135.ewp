@@ -368,6 +368,9 @@
                     <state>$PROJ_DIR$\..\Middleware\UCOS-III\CPU</state>
                     <state>$PROJ_DIR$\..\Middleware\UCOS-III\LIB</state>
                     <state>$PROJ_DIR$\..\Middleware\UCOS-III\OS3</state>
+                    <state>$PROJ_DIR$\..\Middleware\LwIP</state>
+                    <state>$PROJ_DIR$\..\Middleware\LwIP\arch</state>
+                    <state>$PROJ_DIR$\..\Middleware\LwIP\include</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2263,6 +2266,9 @@
             <group>
                 <name>Core</name>
                 <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\eth.c</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\main.c</name>
                 </file>
                 <file>
@@ -2280,6 +2286,9 @@
             <name>BSP</name>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_led.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_YT8531C.c</name>
             </file>
         </group>
         <group>
@@ -2304,6 +2313,12 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_ddr.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_eth.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_eth_ex.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_exti.c</name>
@@ -2341,7 +2356,163 @@
         </group>
     </group>
     <group>
-        <name>Middlewares</name>
+        <name>Middleware</name>
+        <group>
+            <name>LwIP</name>
+            <group>
+                <name>api</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\api_lib.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\api_msg.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\err.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\if_api.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\netbuf.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\netdb.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\netifapi.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\sockets.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\api\tcpip.c</name>
+                </file>
+            </group>
+            <group>
+                <name>arch</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\bpstruct.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\cc.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\epstruct.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\ethernetif.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\lwipopts.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\perf.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\sys_arch.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\arch\sys_arch.h</name>
+                </file>
+            </group>
+            <group>
+                <name>core</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\acd.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\altcp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\altcp_alloc.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\altcp_tcp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\autoip.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\def.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\dhcp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\dns.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\etharp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\icmp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\igmp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\inet_chksum.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\init.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ip.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\ip4.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\ip4_addr.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\ipv4\ip4_frag.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\mem.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\memp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\netif.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\pbuf.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\raw.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\stats.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\sys.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\tcp.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\tcp_in.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\tcp_out.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\timeouts.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\core\udp.c</name>
+                </file>
+            </group>
+            <group>
+                <name>netif</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\LwIP\netif\ethernet.c</name>
+                </file>
+            </group>
+        </group>
         <group>
             <name>UCOS-III</name>
             <group>

@@ -1,5 +1,6 @@
 #include "main.h"
 #include "bsp_led.h"
+#include "eth.h"
 #include "os.h"
 
 void SystemClock_Config(void);
@@ -21,7 +22,8 @@ int main(void)
     HAL_Init();
 
     // SystemClock_Config();
-
+    
+    MX_ETH1_Init();
     OSInit(&err);
     if (err != OS_ERR_NONE) {
         Error_Handler();
