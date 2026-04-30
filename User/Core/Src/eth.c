@@ -212,6 +212,10 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* USER CODE BEGIN ETH_MspInit 1 */
+    IRQ_SetPriority(ETH1_IRQn, 5);
+    IRQ_SetMode(ETH1_IRQn,
+                IRQ_MODE_TRIG_LEVEL | IRQ_MODE_TYPE_IRQ | IRQ_MODE_CPU_0);
+    IRQ_Enable(ETH1_IRQn);
 
   /* USER CODE END ETH_MspInit 1 */
   }

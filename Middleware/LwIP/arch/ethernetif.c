@@ -257,10 +257,10 @@ static void low_level_init(struct netif *netif)
         (link_state == YT8531C_STATUS_1000MBITS_HALFDUPLEX)) {
 
         netif_set_link_up(netif);
-        HAL_ETH_Start(&heth1);
+        HAL_ETH_Start_IT(&heth1);
     } else {
         netif_set_link_down(netif);
-        HAL_ETH_Stop(&heth1);
+        HAL_ETH_Stop_IT(&heth1);
     }
 }
 
@@ -464,15 +464,18 @@ ethernetif_input(struct netif *netif)
 
   // ethernetif = netif->state;
 
-  /* move received packet into a new pbuf */
-  p = low_level_input(netif);
-  /* if no packet could be read, silently ignore this */
-  if (p != NULL) {
+  while (1) {
+    /* move received packet into a new pbuf */
+    p = low_level_input(netif);
+    /* if no packet could be read, silently ignore this */
+    if (p == NULL) {
+      break;
+    }
+
     /* pass all packets to ethernet_input, which decides what packets it supports */
     if (netif->input(p, netif) != ERR_OK) {
       LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
       pbuf_free(p);
-      p = NULL;
     }
   }
 }
@@ -552,14 +555,14 @@ void ethernetif_update_link(struct netif *netif)
     case YT8531C_STATUS_1000MBITS_HALFDUPLEX:
         if (!netif_is_link_up(netif)) {
             netif_set_link_up(netif);
-            HAL_ETH_Start(&heth1);
+            HAL_ETH_Start_IT(&heth1);
         }
         break;
 
     case YT8531C_STATUS_LINK_DOWN:
     default:
         if (netif_is_link_up(netif)) {
-            HAL_ETH_Stop(&heth1);
+            HAL_ETH_Stop_IT(&heth1);
             netif_set_link_down(netif);
         }
         break;

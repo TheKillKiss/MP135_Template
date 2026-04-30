@@ -20,6 +20,7 @@ struct netif gnetif;
 
 static OS_TCB  EthIfTaskTCB;
 static CPU_STK EthIfTaskStk[ETHIF_TASK_STK_SIZE];
+static OS_SEM  EthRxSem;
 
 static void LedTask(void *p_arg);
 static void EthIfTask(void *p_arg);
@@ -34,6 +35,11 @@ int main(void)
     
     // MX_ETH1_Init();
     OSInit(&err);
+    if (err != OS_ERR_NONE) {
+        Error_Handler();
+    }
+
+    OSSemCreate(&EthRxSem, "Eth Rx Sem", 0u, &err);
     if (err != OS_ERR_NONE) {
         Error_Handler();
     }
@@ -103,20 +109,34 @@ int main(void)
 static void EthIfTask(void *p_arg)
 {
     OS_ERR err;
+    CPU_TS ts;
 
     (void)p_arg;
 
     while (1) {
         ethernetif_update_link(&gnetif);
 
-        if (netif_is_link_up(&gnetif)) {
+        OSSemPend(&EthRxSem,
+                  500u,
+                  OS_OPT_PEND_BLOCKING,
+                  &ts,
+                  &err);
+
+        if ((err == OS_ERR_NONE) && netif_is_link_up(&gnetif)) {
             ethernetif_input(&gnetif);
         }
-
-        OSTimeDlyHMSM(0u, 0u, 0u, 1u,
-                      OS_OPT_TIME_HMSM_STRICT,
-                      &err);
     }
+}
+
+void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
+{
+    OS_ERR err;
+
+    (void)heth;
+
+    OSSemPost(&EthRxSem,
+              OS_OPT_POST_1 | OS_OPT_POST_NO_SCHED,
+              &err);
 }
 
 static void LedTask(void *p_arg)
