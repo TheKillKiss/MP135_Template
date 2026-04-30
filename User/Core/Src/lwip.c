@@ -2,6 +2,7 @@
 #include "main.h"
 #include "ethernetif.h"
 #include "lwip/tcpip.h"
+#include "lwip/dhcp.h"
 #include "lwip/apps/lwiperf.h"
 #include "os.h"
 
@@ -40,9 +41,15 @@ void LwIP_Init(void)
 
     tcpip_init(NULL, NULL);
 
+#if LWIP_DHCP
+    ip_addr_set_zero_ip4(&ipaddr);
+    ip_addr_set_zero_ip4(&netmask);
+    ip_addr_set_zero_ip4(&gw);
+#else
     IP4_ADDR(&ipaddr,  192, 168, 6, 6);
     IP4_ADDR(&netmask, 255, 255, 255, 0);
     IP4_ADDR(&gw,      192, 168, 6, 1);
+#endif
 
     netif_add(&gnetif,
               &ipaddr,
@@ -54,6 +61,12 @@ void LwIP_Init(void)
 
     netif_set_default(&gnetif);
     netif_set_up(&gnetif);
+
+#if LWIP_DHCP
+    if (dhcp_start(&gnetif) != ERR_OK) {
+        Error_Handler();
+    }
+#endif
 
     IperfSession = lwiperf_start_tcp_server_default(IperfReport, NULL);
     if (IperfSession == NULL) {

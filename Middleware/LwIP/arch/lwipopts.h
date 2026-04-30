@@ -109,7 +109,7 @@ extern unsigned char memp_memory_LWIP_HEAP_RAM_base[];
 
 
 /* ---------- DHCP options ---------- */
-#define LWIP_DHCP               1
+#define LWIP_DHCP               0
 
 
 /* ---------- UDP options ---------- */
