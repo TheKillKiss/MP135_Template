@@ -3677,6 +3677,9 @@
                     <name>$PROJ_DIR$\..\Middleware\LwIP\netif\ethernet.c</name>
                 </file>
             </group>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\LwIP\lwiperf.c</name>
+            </file>
         </group>
         <group>
             <name>UCOS-III</name>

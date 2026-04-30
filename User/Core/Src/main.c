@@ -2,6 +2,7 @@
 #include "bsp_led.h"
 #include "ethernetif.h"
 #include "lwip/tcpip.h"
+#include "lwip/apps/lwiperf.h"
 #include "eth.h"
 #include "os.h"
 
@@ -21,9 +22,19 @@ struct netif gnetif;
 static OS_TCB  EthIfTaskTCB;
 static CPU_STK EthIfTaskStk[ETHIF_TASK_STK_SIZE];
 static OS_SEM  EthRxSem;
+static void   *IperfSession;
 
 static void LedTask(void *p_arg);
 static void EthIfTask(void *p_arg);
+static void IperfReport(void *arg,
+                        enum lwiperf_report_type report_type,
+                        const ip_addr_t *local_addr,
+                        u16_t local_port,
+                        const ip_addr_t *remote_addr,
+                        u16_t remote_port,
+                        u32_t bytes_transferred,
+                        u32_t ms_duration,
+                        u32_t bandwidth_kbitpsec);
 
 int main(void)
 {
@@ -66,6 +77,11 @@ int main(void)
 
     netif_set_default(&gnetif);
     netif_set_up(&gnetif);
+
+    IperfSession = lwiperf_start_tcp_server_default(IperfReport, NULL);
+    if (IperfSession == NULL) {
+        Error_Handler();
+    }
 
     OSTaskCreate((OS_TCB     *)&LedTaskTCB,
                  (CPU_CHAR   *)"LED Task",
@@ -114,16 +130,18 @@ static void EthIfTask(void *p_arg)
     (void)p_arg;
 
     while (1) {
-        ethernetif_update_link(&gnetif);
-
         OSSemPend(&EthRxSem,
                   500u,
                   OS_OPT_PEND_BLOCKING,
                   &ts,
                   &err);
 
-        if ((err == OS_ERR_NONE) && netif_is_link_up(&gnetif)) {
-            ethernetif_input(&gnetif);
+        if (err == OS_ERR_NONE) {
+            if (netif_is_link_up(&gnetif)) {
+                ethernetif_input(&gnetif);
+            }
+        } else if (err == OS_ERR_TIMEOUT) {
+            ethernetif_update_link(&gnetif);
         }
     }
 }
@@ -137,6 +155,27 @@ void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
     OSSemPost(&EthRxSem,
               OS_OPT_POST_1 | OS_OPT_POST_NO_SCHED,
               &err);
+}
+
+static void IperfReport(void *arg,
+                        enum lwiperf_report_type report_type,
+                        const ip_addr_t *local_addr,
+                        u16_t local_port,
+                        const ip_addr_t *remote_addr,
+                        u16_t remote_port,
+                        u32_t bytes_transferred,
+                        u32_t ms_duration,
+                        u32_t bandwidth_kbitpsec)
+{
+    (void)arg;
+    (void)report_type;
+    (void)local_addr;
+    (void)local_port;
+    (void)remote_addr;
+    (void)remote_port;
+    (void)bytes_transferred;
+    (void)ms_duration;
+    (void)bandwidth_kbitpsec;
 }
 
 static void LedTask(void *p_arg)

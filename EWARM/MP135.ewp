@@ -234,7 +234,7 @@
                     <state>USE_HAL_DRIVER</state>
                     <state>STM32MP135Dxx</state>
                     <state>CORE_CA7</state>
-                    <state>NO_CACHE_USE</state>
+                    <state>CACHE_USE</state>
                     <state>NO_MMU_USE</state>
                     <state>DDR_TYPE_DDR3_4Gb</state>
                 </option>
@@ -2515,6 +2515,9 @@
                     <name>$PROJ_DIR$\..\Middleware\LwIP\netif\ethernet.c</name>
                 </file>
             </group>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\LwIP\lwiperf.c</name>
+            </file>
         </group>
         <group>
             <name>UCOS-III</name>

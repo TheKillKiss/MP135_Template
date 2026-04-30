@@ -309,7 +309,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
     }
 
 #if defined(CACHE_USE)
-    SCB_CleanDCache_by_Addr((uint32_t *)eth_tx_buffer, (int32_t)framelen);
+    // SCB_CleanDCache_by_Addr((uint32_t *)eth_tx_buffer, (int32_t)framelen);
 #endif
 
     memset(&txbuffer, 0, sizeof(txbuffer));
@@ -413,8 +413,8 @@ static struct pbuf *low_level_input(struct netif *netif)
             }
 
 #if defined(CACHE_USE)
-            SCB_InvalidateDCache_by_Addr((uint32_t *)rx_buffer_it->buffer,
-                                          (int32_t)rx_buffer_it->len);
+            // SCB_InvalidateDCache_by_Addr((uint32_t *)rx_buffer_it->buffer,
+                                          // (int32_t)rx_buffer_it->len);
 #endif
 
             memcpy(payload, rx_buffer_it->buffer, copy_len);
