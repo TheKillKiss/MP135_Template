@@ -213,7 +213,7 @@ The STM32H7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #define DEFAULT_TCP_RECVMBOX_SIZE       16
 #define DEFAULT_ACCEPTMBOX_SIZE         16
 #define DEFAULT_THREAD_STACKSIZE        1024
-#define TCPIP_THREAD_PRIO               7
+#define TCPIP_THREAD_PRIO               9
 
 #endif /* __LWIPOPTS_H__ */
 

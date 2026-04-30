@@ -3431,6 +3431,9 @@
                     <name>$PROJ_DIR$\..\User\Core\Src\eth.c</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\lwip.c</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\main.c</name>
                 </file>
                 <file>
