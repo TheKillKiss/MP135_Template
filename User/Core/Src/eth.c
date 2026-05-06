@@ -79,7 +79,7 @@ void MX_ETH1_Init(void)
   heth1.Init.MediaInterface = HAL_ETH_RGMII_MODE;
   heth1.Init.TxDesc = DMATxDscrTab;
   heth1.Init.RxDesc = DMARxDscrTab;
-  heth1.Init.RxBuffLen = 1524;
+  heth1.Init.RxBuffLen = 1536;
 
   /* USER CODE BEGIN MACADDRESS */
 

@@ -5,7 +5,7 @@
 
 void SystemClock_Config(void);
 
-#define LED_TASK_PRIO      8u
+#define LED_TASK_PRIO      0u
 #define LED_TASK_STK_SIZE  512u
 
 static OS_TCB  LedTaskTCB;

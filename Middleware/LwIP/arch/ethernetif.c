@@ -47,10 +47,13 @@
 
 // #if 0 /* don't build, this is only a skeleton, see previous comment */
 
+#include <stddef.h>
+
 #include "ethernetif.h"
 
 #include "lwip/def.h"
 #include "lwip/mem.h"
+#include "lwip/memp.h"
 #include "lwip/pbuf.h"
 #include "lwip/stats.h"
 #include "lwip/snmp.h"
@@ -67,19 +70,34 @@
 #define IFNAME1 'n'
 
 #define ETH_TX_BUFFER_SIZE    1536U
-#define ETH_RX_BUFFER_SIZE    1524U
-#define ETH_RX_BUFFER_COUNT   (ETH_RX_DESC_CNT * 2U)
+#define ETH_RX_BUFFER_SIZE    1536U
+#define ETH_RX_BUFFER_COUNT   100U
 
 static uint8_t eth_tx_buffer[ETH_TX_BUFFER_SIZE];
-static uint8_t eth_rx_buffer[ETH_RX_BUFFER_COUNT][ETH_RX_BUFFER_SIZE];
+
+typedef enum {
+  RX_ALLOC_OK    = 0x00,
+  RX_ALLOC_ERROR = 0x01
+} RxAllocStatusTypeDef;
+
+typedef struct {
+  struct pbuf_custom pbuf_custom;
+  uint8_t buff[(ETH_RX_BUFFER_SIZE + 31U) & ~31U] __ALIGNED(32);
+} RxBuff_t;
+
+LWIP_MEMPOOL_DECLARE(RX_POOL,
+                     ETH_RX_BUFFER_COUNT,
+                     sizeof(RxBuff_t),
+                     "Zero-copy RX PBUF pool");
 
 extern ETH_HandleTypeDef heth1;
 extern ETH_TxPacketConfigTypeDef TxConfig;
 
 static yt8531c_Object_t YT8531C;
-static ETH_BufferTypeDef eth_rx_app_buffer[ETH_RX_BUFFER_COUNT];
-static uint32_t eth_rx_buffer_index;
+static uint8_t RxAllocStatus = RX_ALLOC_OK;
 static int32_t eth_applied_link_state = YT8531C_STATUS_LINK_DOWN;
+
+static void pbuf_free_custom(struct pbuf *p);
 
 /**
  * Helper struct to hold private data used to operate your ethernet interface.
@@ -227,14 +245,28 @@ static HAL_StatusTypeDef ethernetif_apply_mac_config(int32_t link_state)
 
 void HAL_ETH_RxAllocateCallback(ETH_HandleTypeDef *heth, uint8_t **buff)
 {
+    struct pbuf_custom *p;
+    uint8_t *buffer;
+
     (void)heth;
 
-    *buff = eth_rx_buffer[eth_rx_buffer_index];
-    eth_rx_buffer_index++;
-
-    if (eth_rx_buffer_index >= ETH_RX_BUFFER_COUNT) {
-        eth_rx_buffer_index = 0U;
+    p = LWIP_MEMPOOL_ALLOC(RX_POOL);
+    if (p == NULL) {
+        RxAllocStatus = RX_ALLOC_ERROR;
+        *buff = NULL;
+        return;
     }
+
+    buffer = (uint8_t *)p + offsetof(RxBuff_t, buff);
+    *buff = buffer + ETH_PAD_SIZE;
+
+    p->custom_free_function = pbuf_free_custom;
+    (void)pbuf_alloced_custom(PBUF_RAW,
+                              0,
+                              PBUF_REF,
+                              p,
+                              buffer,
+                              ETH_RX_BUFFER_SIZE - ETH_PAD_SIZE);
 }
 
 void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth,
@@ -243,10 +275,9 @@ void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth,
                             uint8_t *buff,
                             uint16_t Length)
 {
-    ETH_BufferTypeDef *rx_buffer;
-    uint32_t buffer_start;
-    uint32_t buffer_offset;
-    uint32_t index;
+    struct pbuf **ppStart = (struct pbuf **)pStart;
+    struct pbuf **ppEnd = (struct pbuf **)pEnd;
+    struct pbuf *p;
 
     (void)heth;
 
@@ -254,27 +285,30 @@ void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth,
         return;
     }
 
-    buffer_start = (uint32_t)&eth_rx_buffer[0][0];
-    if (((uint32_t)buff < buffer_start) ||
-        ((uint32_t)buff >= (buffer_start + sizeof(eth_rx_buffer)))) {
-        return;
-    }
+    p = (struct pbuf *)(buff - ETH_PAD_SIZE - offsetof(RxBuff_t, buff));
+    p->next = NULL;
+    p->tot_len = Length + ETH_PAD_SIZE;
+    p->len = Length + ETH_PAD_SIZE;
 
-    buffer_offset = (uint32_t)buff - buffer_start;
-    index = buffer_offset / ETH_RX_BUFFER_SIZE;
-
-    rx_buffer = &eth_rx_app_buffer[index];
-    rx_buffer->buffer = buff;
-    rx_buffer->len = Length;
-    rx_buffer->next = NULL;
-
-    if (*pStart == NULL) {
-        *pStart = rx_buffer;
+    if (*ppStart == NULL) {
+        *ppStart = p;
     } else {
-        ((ETH_BufferTypeDef *)(*pEnd))->next = rx_buffer;
+        (*ppEnd)->next = p;
     }
 
-    *pEnd = rx_buffer;
+    *ppEnd = p;
+}
+
+static void pbuf_free_custom(struct pbuf *p)
+{
+    struct pbuf_custom *custom_pbuf = (struct pbuf_custom *)p;
+
+    LWIP_MEMPOOL_FREE(RX_POOL, custom_pbuf);
+
+    if (RxAllocStatus == RX_ALLOC_ERROR) {
+        RxAllocStatus = RX_ALLOC_OK;
+        ethernetif_notify_rx();
+    }
 }
 
 /**
@@ -290,6 +324,8 @@ static void low_level_init(struct netif *netif)
     int32_t link_state;
 
     (void)ethernetif;
+
+    LWIP_MEMPOOL_INIT(RX_POOL);
 
     netif->hwaddr_len = ETHARP_HWADDR_LEN;
     netif->hwaddr[0] = 0x00;
@@ -406,100 +442,28 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 static struct pbuf *low_level_input(struct netif *netif)
 {
     struct pbuf *p = NULL;
-    struct pbuf *q;
-    ETH_BufferTypeDef *rx_buffer;
-    ETH_BufferTypeDef *rx_buffer_it;
-    uint16_t len = 0;
-    uint16_t copied = 0;
-    uint8_t *payload;
 
     (void)netif;
 
-    rx_buffer = NULL;
-
-    if (HAL_ETH_ReadData(&heth1, (void **)&rx_buffer) != HAL_OK) {
+    if (RxAllocStatus != RX_ALLOC_OK) {
         return NULL;
     }
 
-    if (rx_buffer == NULL) {
+    if (HAL_ETH_ReadData(&heth1, (void **)&p) != HAL_OK) {
         return NULL;
     }
 
-    rx_buffer_it = rx_buffer;
+    if (p != NULL) {
+        MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
 
-    while (rx_buffer_it != NULL) {
-        len += rx_buffer_it->len;
-        rx_buffer_it = rx_buffer_it->next;
-    }
-
-    if (len == 0U) {
-        return NULL;
-    }
-
-#if ETH_PAD_SIZE
-    len += ETH_PAD_SIZE;
-#endif
-
-    p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
-    if (p == NULL) {
-        LINK_STATS_INC(link.memerr);
-        LINK_STATS_INC(link.drop);
-        MIB2_STATS_NETIF_INC(netif, ifindiscards);
-        return NULL;
-    }
-
-#if ETH_PAD_SIZE
-    pbuf_remove_header(p, ETH_PAD_SIZE);
-#endif
-
-    rx_buffer_it = rx_buffer;
-    q = p;
-    copied = 0;
-
-    while ((q != NULL) && (rx_buffer_it != NULL)) {
-        uint16_t copy_len;
-        uint16_t remain_in_q;
-
-        payload = (uint8_t *)q->payload;
-        remain_in_q = q->len;
-
-        while ((remain_in_q > 0U) && (rx_buffer_it != NULL)) {
-            copy_len = rx_buffer_it->len;
-
-            if (copy_len > remain_in_q) {
-                copy_len = remain_in_q;
-            }
-
-#if defined(CACHE_USE)
-            // SCB_InvalidateDCache_by_Addr((uint32_t *)rx_buffer_it->buffer,
-                                          // (int32_t)rx_buffer_it->len);
-#endif
-
-            memcpy(payload, rx_buffer_it->buffer, copy_len);
-
-            payload += copy_len;
-            copied += copy_len;
-            remain_in_q -= copy_len;
-
-            rx_buffer_it = rx_buffer_it->next;
+        if (((u8_t *)p->payload)[0] & 1) {
+            MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
+        } else {
+            MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
         }
 
-        q = q->next;
+        LINK_STATS_INC(link.recv);
     }
-
-#if ETH_PAD_SIZE
-    pbuf_add_header(p, ETH_PAD_SIZE);
-#endif
-
-    MIB2_STATS_NETIF_ADD(netif, ifinoctets, p->tot_len);
-
-    if (((u8_t *)p->payload)[0] & 1) {
-        MIB2_STATS_NETIF_INC(netif, ifinnucastpkts);
-    } else {
-        MIB2_STATS_NETIF_INC(netif, ifinucastpkts);
-    }
-
-    LINK_STATS_INC(link.recv);
 
     return p;
 }

@@ -71,6 +71,10 @@ extern "C" {
 #define HAL_USART_MODULE_ENABLED
 #define HAL_MMC_MODULE_ENABLED
 
+/* Ethernet DMA descriptor depth for sustained multi-connection TCP RX load. */
+#define ETH_TX_DESC_CNT         20U
+#define ETH_RX_DESC_CNT         20U
+
 /* ########################## Register Callbacks selection ############################## */
 /**
   * @brief This is the list of modules where register callback can be used

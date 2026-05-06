@@ -6,7 +6,7 @@
 #include "lwip/apps/lwiperf.h"
 #include "os.h"
 
-#define ETHIF_TASK_PRIO        10u
+#define ETHIF_TASK_PRIO        6u
 #define ETHIF_TASK_STK_SIZE    1024u
 
 static OS_TCB  EthIfTaskTCB;
@@ -118,12 +118,17 @@ static void EthIfTask(void *p_arg)
 
 void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
 {
-    OS_ERR err;
-
     (void)heth;
 
+    ethernetif_notify_rx();
+}
+
+void ethernetif_notify_rx(void)
+{
+    OS_ERR err;
+
     OSSemPost(&EthRxSem,
-              OS_OPT_POST_1 | OS_OPT_POST_NO_SCHED,
+              OS_OPT_POST_1,
               &err);
 }
 

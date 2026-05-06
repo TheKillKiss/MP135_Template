@@ -61,7 +61,7 @@ extern unsigned char memp_memory_LWIP_HEAP_RAM_base[];
 
 /* MEMP_NUM_TCP_SEG: the number of simultaneously queued TCP
    segments. */
-#define MEMP_NUM_TCP_SEG        64
+#define MEMP_NUM_TCP_SEG        32
 
 #define MEMP_NUM_TCPIP_MSG_API  16
 #define MEMP_NUM_TCPIP_MSG_INPKT 32
@@ -92,16 +92,17 @@ extern unsigned char memp_memory_LWIP_HEAP_RAM_base[];
 
 /* Controls if TCP should queue segments that arrive out of
    order. Define to 0 if your device is low on memory. */
+#define TCP_QUEUE_OOSEQ         0
 
 /* TCP Maximum segment size. */
 #define TCP_MSS                 (1500 - 40)	  /* TCP_MSS = (Ethernet MTU - IP header size - TCP header size) */
 
 /* TCP sender buffer space (bytes). */
-#define TCP_SND_BUF             (16*TCP_MSS)
+#define TCP_SND_BUF             (8*TCP_MSS)
 
 
 /* TCP receive window. */
-#define TCP_WND                 (16*TCP_MSS)
+#define TCP_WND                 (4*TCP_MSS)
 
 
 /* ---------- ICMP options ---------- */
@@ -118,8 +119,8 @@ extern unsigned char memp_memory_LWIP_HEAP_RAM_base[];
 
 
 /* ---------- Statistics options ---------- */
-#define LWIP_STATS 1
-#define MIB2_STATS 1
+#define LWIP_STATS 0
+#define MIB2_STATS 0
 
 /* ---------- link callback options ---------- */
 /* LWIP_NETIF_LINK_CALLBACK==1: Support a callback function from an interface
@@ -213,7 +214,7 @@ The STM32H7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
 #define DEFAULT_TCP_RECVMBOX_SIZE       16
 #define DEFAULT_ACCEPTMBOX_SIZE         16
 #define DEFAULT_THREAD_STACKSIZE        1024
-#define TCPIP_THREAD_PRIO               9
+#define TCPIP_THREAD_PRIO               1
 
 #endif /* __LWIPOPTS_H__ */
 
