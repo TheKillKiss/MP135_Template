@@ -79,6 +79,7 @@ extern ETH_TxPacketConfigTypeDef TxConfig;
 static yt8531c_Object_t YT8531C;
 static ETH_BufferTypeDef eth_rx_app_buffer[ETH_RX_BUFFER_COUNT];
 static uint32_t eth_rx_buffer_index;
+static int32_t eth_applied_link_state = YT8531C_STATUS_LINK_DOWN;
 
 /**
  * Helper struct to hold private data used to operate your ethernet interface.
@@ -161,6 +162,67 @@ static err_t ethernetif_phy_init(void)
     }
 
     return ERR_OK;
+}
+
+static uint8_t ethernetif_is_valid_link_state(int32_t link_state)
+{
+    return (uint8_t)((link_state == YT8531C_STATUS_10MBITS_FULLDUPLEX)  ||
+                     (link_state == YT8531C_STATUS_10MBITS_HALFDUPLEX)  ||
+                     (link_state == YT8531C_STATUS_100MBITS_FULLDUPLEX) ||
+                     (link_state == YT8531C_STATUS_100MBITS_HALFDUPLEX) ||
+                     (link_state == YT8531C_STATUS_1000MBITS_FULLDUPLEX)||
+                     (link_state == YT8531C_STATUS_1000MBITS_HALFDUPLEX));
+}
+
+static HAL_StatusTypeDef ethernetif_apply_mac_config(int32_t link_state)
+{
+    ETH_MACConfigTypeDef mac_conf;
+
+    if (HAL_ETH_GetMACConfig(&heth1, &mac_conf) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    switch (link_state) {
+    case YT8531C_STATUS_10MBITS_FULLDUPLEX:
+        mac_conf.Speed = ETH_SPEED_10M;
+        mac_conf.DuplexMode = ETH_FULLDUPLEX_MODE;
+        break;
+
+    case YT8531C_STATUS_10MBITS_HALFDUPLEX:
+        mac_conf.Speed = ETH_SPEED_10M;
+        mac_conf.DuplexMode = ETH_HALFDUPLEX_MODE;
+        break;
+
+    case YT8531C_STATUS_100MBITS_FULLDUPLEX:
+        mac_conf.Speed = ETH_SPEED_100M;
+        mac_conf.DuplexMode = ETH_FULLDUPLEX_MODE;
+        break;
+
+    case YT8531C_STATUS_100MBITS_HALFDUPLEX:
+        mac_conf.Speed = ETH_SPEED_100M;
+        mac_conf.DuplexMode = ETH_HALFDUPLEX_MODE;
+        break;
+
+    case YT8531C_STATUS_1000MBITS_FULLDUPLEX:
+        mac_conf.Speed = ETH_SPEED_1000M;
+        mac_conf.DuplexMode = ETH_FULLDUPLEX_MODE;
+        break;
+
+    case YT8531C_STATUS_1000MBITS_HALFDUPLEX:
+        mac_conf.Speed = ETH_SPEED_1000M;
+        mac_conf.DuplexMode = ETH_HALFDUPLEX_MODE;
+        break;
+
+    default:
+        return HAL_ERROR;
+    }
+
+    if (HAL_ETH_SetMACConfig(&heth1, &mac_conf) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    eth_applied_link_state = link_state;
+    return HAL_OK;
 }
 
 void HAL_ETH_RxAllocateCallback(ETH_HandleTypeDef *heth, uint8_t **buff)
@@ -249,18 +311,14 @@ static void low_level_init(struct netif *netif)
 
     link_state = YT8531C_GetLinkState(&YT8531C);
 
-    if ((link_state == YT8531C_STATUS_10MBITS_FULLDUPLEX)  ||
-        (link_state == YT8531C_STATUS_10MBITS_HALFDUPLEX)  ||
-        (link_state == YT8531C_STATUS_100MBITS_FULLDUPLEX) ||
-        (link_state == YT8531C_STATUS_100MBITS_HALFDUPLEX) ||
-        (link_state == YT8531C_STATUS_1000MBITS_FULLDUPLEX)||
-        (link_state == YT8531C_STATUS_1000MBITS_HALFDUPLEX)) {
-
+    if (ethernetif_is_valid_link_state(link_state) &&
+        (ethernetif_apply_mac_config(link_state) == HAL_OK)) {
         netif_set_link_up(netif);
         HAL_ETH_Start_IT(&heth1);
     } else {
         netif_set_link_down(netif);
         HAL_ETH_Stop_IT(&heth1);
+        eth_applied_link_state = YT8531C_STATUS_LINK_DOWN;
     }
 }
 
@@ -553,7 +611,13 @@ void ethernetif_update_link(struct netif *netif)
     case YT8531C_STATUS_100MBITS_HALFDUPLEX:
     case YT8531C_STATUS_1000MBITS_FULLDUPLEX:
     case YT8531C_STATUS_1000MBITS_HALFDUPLEX:
-        if (!netif_is_link_up(netif)) {
+        if ((!netif_is_link_up(netif)) || (eth_applied_link_state != link_state)) {
+            HAL_ETH_Stop_IT(&heth1);
+            if (ethernetif_apply_mac_config(link_state) != HAL_OK) {
+                netif_set_link_down(netif);
+                eth_applied_link_state = YT8531C_STATUS_LINK_DOWN;
+                break;
+            }
             netif_set_link_up(netif);
             HAL_ETH_Start_IT(&heth1);
         }
@@ -565,6 +629,7 @@ void ethernetif_update_link(struct netif *netif)
             HAL_ETH_Stop_IT(&heth1);
             netif_set_link_down(netif);
         }
+        eth_applied_link_state = YT8531C_STATUS_LINK_DOWN;
         break;
     }
 }
