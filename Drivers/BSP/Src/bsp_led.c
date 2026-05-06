@@ -1,7 +1,8 @@
 #include "bsp_led.h"
+#include "os.h"
 
-#define LED_GPIO_PORT GPIOI
-#define LED_GPIO_PIN  GPIO_PIN_3
+static OS_TCB  LedTaskTCB;
+static CPU_STK LedTaskStk[LED_TASK_STK_SIZE];
 
 static void BSP_LED_GPIO_Init(void)
 {
@@ -18,12 +19,6 @@ static void BSP_LED_GPIO_Init(void)
     HAL_GPIO_Init(LED_GPIO_PORT, &GPIO_InitStruct);
 }
 
-void BSP_LED_Init(void)
-{
-    BSP_LED_GPIO_Init();
-    BSP_LED_Off();
-}
-
 void BSP_LED_On(void)
 {
     HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
@@ -38,3 +33,47 @@ void BSP_LED_Toggle(void)
 {
     HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
 }
+
+static void LedTask(void *p_arg)
+{
+    OS_ERR err;
+
+    (void)p_arg;
+
+    while (1) {
+        BSP_LED_Toggle();
+
+        OSTimeDlyHMSM(0u, 0u, 0u, 500u,
+                      OS_OPT_TIME_HMSM_STRICT,
+                      &err);
+    }
+}
+
+
+void BSP_LED_Init(void)
+{
+    OS_ERR err;
+
+    BSP_LED_GPIO_Init();
+    BSP_LED_Off();
+
+    
+    OSTaskCreate((OS_TCB     *)&LedTaskTCB,
+                 (CPU_CHAR   *)"LED Task",
+                 (OS_TASK_PTR ) LedTask,
+                 (void       *) 0,
+                 (OS_PRIO     ) LED_TASK_PRIO,
+                 (CPU_STK    *)&LedTaskStk[0],
+                 (CPU_STK_SIZE) LED_TASK_STK_SIZE / 10u,
+                 (CPU_STK_SIZE) LED_TASK_STK_SIZE,
+                 (OS_MSG_QTY  ) 0u,
+                 (OS_TICK     ) 0u,
+                 (void       *) 0,
+                 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                 (OS_ERR     *)&err);
+
+    if (err != OS_ERR_NONE) {
+        Error_Handler();
+    }
+}
+

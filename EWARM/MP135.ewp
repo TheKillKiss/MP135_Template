@@ -371,6 +371,7 @@
                     <state>$PROJ_DIR$\..\Middleware\LwIP</state>
                     <state>$PROJ_DIR$\..\Middleware\LwIP\arch</state>
                     <state>$PROJ_DIR$\..\Middleware\LwIP\include</state>
+                    <state>$PROJ_DIR$\..\User\Task\Inc</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2279,6 +2280,12 @@
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_it.c</name>
+                </file>
+            </group>
+            <group>
+                <name>Task</name>
+                <file>
+                    <name>$PROJ_DIR$\..\User\Task\Src\task_1ms.c</name>
                 </file>
             </group>
         </group>

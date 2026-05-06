@@ -3,6 +3,12 @@
 
 #include "main.h"
 
+#define LED_GPIO_PORT GPIOI
+#define LED_GPIO_PIN  GPIO_PIN_3
+
+#define LED_TASK_PRIO      0u
+#define LED_TASK_STK_SIZE  512u
+
 void BSP_LED_Init(void);
 void BSP_LED_On(void);
 void BSP_LED_Off(void);

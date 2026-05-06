@@ -3443,6 +3443,12 @@
                     <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_it.c</name>
                 </file>
             </group>
+            <group>
+                <name>Task</name>
+                <file>
+                    <name>$PROJ_DIR$\..\User\Task\Src\task_1ms.c</name>
+                </file>
+            </group>
         </group>
     </group>
     <group>

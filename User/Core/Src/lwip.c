@@ -2,7 +2,6 @@
 #include "main.h"
 #include "ethernetif.h"
 #include "lwip/tcpip.h"
-#include "lwip/dhcp.h"
 #include "lwip/apps/lwiperf.h"
 #include "os.h"
 
