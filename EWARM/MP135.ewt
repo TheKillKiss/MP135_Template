@@ -3443,6 +3443,9 @@
         <name>Drivers</name>
         <group>
             <name>BSP</name>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_led.c</name>
+            </file>
         </group>
         <group>
             <name>CMSIS</name>
@@ -3453,10 +3456,10 @@
                 <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\mmu_stm32mp13xx.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7.s</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7_rtos.s</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7.c</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7_rtos.c</name>
             </file>
         </group>
         <group>

@@ -791,11 +791,11 @@
                 </option>
                 <option>
                     <name>IlinkIcfOverride</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IlinkIcfFile</name>
-                    <state>$TOOLKIT_DIR$/config/linker/ST/stm32mp13xx.icf</state>
+                    <state>C:\Users\Kamisato\Desktop\folder\test\Drivers\CMSIS\Device\Source\IAR\linker\stm32mp13xx_a7_ddr.icf</state>
                 </option>
                 <option>
                     <name>IlinkIcfFileSlave</name>
@@ -2287,10 +2287,10 @@
                 <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\mmu_stm32mp13xx.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7.s</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7_rtos.s</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7.c</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7_rtos.c</name>
             </file>
         </group>
         <group>
