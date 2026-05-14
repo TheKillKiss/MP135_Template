@@ -237,6 +237,7 @@
                     <state>NO_CACHE_USE</state>
                     <state>NO_MMU_USE</state>
                     <state>DDR_TYPE_DDR3_4Gb</state>
+                    <state>__RT_KERNEL_SOURCE__</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>
@@ -364,6 +365,8 @@
                     <state>$PROJ_DIR$\..\Drivers\CMSIS\Include</state>
                     <state>$PROJ_DIR$\..\Drivers\CMSIS\Core_A\Include</state>
                     <state>$PROJ_DIR$\..\Drivers\BSP\Inc</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\libcpu\arm\cortex-a</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1171,7 +1174,7 @@
                 </option>
                 <option>
                     <name>Output description</name>
-                    <state></state>
+                    <state>Automatic choice of formatter, without multibyte support.</state>
                 </option>
                 <option>
                     <name>GOutputBinary</name>
@@ -1209,7 +1212,7 @@
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>GEndianModeBE</name>
@@ -1225,7 +1228,7 @@
                 </option>
                 <option>
                     <name>RTConfigPath2</name>
-                    <state></state>
+                    <state>$TOOLKIT_DIR$\inc\c\DLib_Config_Normal.h</state>
                 </option>
                 <option>
                     <name>GBECoreSlave</name>
@@ -1247,30 +1250,30 @@
                 <option>
                     <name>CoreVariant</name>
                     <version>35</version>
-                    <state>38</state>
+                    <state>54</state>
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>-</state>
+                    <state>STM32MP135D	ST STM32MP135D</state>
                 </option>
                 <option>
                     <name>FPU2</name>
                     <version>0</version>
-                    <state>0</state>
+                    <state>5</state>
                 </option>
                 <option>
                     <name>NrRegs</name>
                     <version>0</version>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>NEON</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>GFPUCoreSlave2</name>
                     <version>35</version>
-                    <state>38</state>
+                    <state>54</state>
                 </option>
                 <option>
                     <name>OGCMSISPackSelectDevice</name>
@@ -1363,6 +1366,13 @@
                 <option>
                     <name>CCDefines</name>
                     <state>NDEBUG</state>
+                    <state>USE_HAL_DRIVER</state>
+                    <state>STM32MP135Dxx</state>
+                    <state>CORE_CA7</state>
+                    <state>NO_CACHE_USE</state>
+                    <state>NO_MMU_USE</state>
+                    <state>DDR_TYPE_DDR3_4Gb</state>
+                    <state>__RT_KERNEL_SOURCE__</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>
@@ -1471,7 +1481,7 @@
                 </option>
                 <option>
                     <name>OutputFile</name>
-                    <state></state>
+                    <state>$FILE_BNAME$.o</state>
                 </option>
                 <option>
                     <name>CCLibConfigHeader</name>
@@ -1483,7 +1493,15 @@
                 </option>
                 <option>
                     <name>CCIncludePath2</name>
-                    <state></state>
+                    <state>$PROJ_DIR$\..\User\Core\Inc</state>
+                    <state>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Inc</state>
+                    <state>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Inc\Legacy</state>
+                    <state>$PROJ_DIR$\..\Drivers\CMSIS\Device\Include</state>
+                    <state>$PROJ_DIR$\..\Drivers\CMSIS\Include</state>
+                    <state>$PROJ_DIR$\..\Drivers\CMSIS\Core_A\Include</state>
+                    <state>$PROJ_DIR$\..\Drivers\BSP\Inc</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\libcpu\arm\cortex-a</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1755,7 +1773,7 @@
                 </option>
                 <option>
                     <name>AOutputFile</name>
-                    <state></state>
+                    <state>$FILE_BNAME$.o</state>
                 </option>
                 <option>
                     <name>ALimitErrorsCheck</name>
@@ -1851,7 +1869,7 @@
                 </option>
                 <option>
                     <name>IlinkOutputFile</name>
-                    <state>###Unitialized###</state>
+                    <state>MP135.out</state>
                 </option>
                 <option>
                     <name>IlinkDebugInfoEnable</name>
@@ -1911,11 +1929,11 @@
                 </option>
                 <option>
                     <name>IlinkIcfOverride</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IlinkIcfFile</name>
-                    <state>lnk0t.icf</state>
+                    <state>C:\Users\Kamisato\Desktop\folder\test\Drivers\CMSIS\Device\Source\IAR\linker\stm32mp13xx_a7_ddr.icf</state>
                 </option>
                 <option>
                     <name>IlinkIcfFileSlave</name>
@@ -1967,7 +1985,7 @@
                 </option>
                 <option>
                     <name>IlinkOverrideProgramEntryLabel</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IlinkProgramEntryLabelSelect</name>
@@ -1975,7 +1993,7 @@
                 </option>
                 <option>
                     <name>IlinkProgramEntryLabel</name>
-                    <state></state>
+                    <state>Reset_Handler</state>
                 </option>
                 <option>
                     <name>DoFill</name>
@@ -2148,7 +2166,7 @@
                 </option>
                 <option>
                     <name>IlinkTrustzoneImportLibraryOut</name>
-                    <state>###Unitialized###</state>
+                    <state>MP135_import_lib.o</state>
                 </option>
                 <option>
                     <name>OILinkExtraOption</name>
@@ -2267,7 +2285,67 @@
                 <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_it.c</name>
                 </file>
+                <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_board.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_startup.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_trap.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_port_iar.s</name>
+                </file>
             </group>
+        </group>
+    </group>
+    <group>
+        <name>Middleware</name>
+        <group>
+            <name>RT-Thread</name>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\clock.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\cpu_up.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\defunct.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\idle.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\irq.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\ipc.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\kservice.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstdio.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstring.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\object.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\scheduler_up.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\scheduler_comm.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\thread.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\timer.c</name>
+            </file>
         </group>
     </group>
     <group>
@@ -2290,7 +2368,7 @@
                 <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\IAR\startup_stm32mp135dxx_ca7_rtos.s</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7_rtos.c</name>
+                <name>$PROJ_DIR$\..\Drivers\CMSIS\Device\Source\system_stm32mp13xx_A7.c</name>
             </file>
         </group>
         <group>

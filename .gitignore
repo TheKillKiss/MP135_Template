@@ -1,5 +1,6 @@
 .vscode/
 EWARM/Debug/
+EWARM/Release/
 EWARM/settings/
 *.txt
 *.bin

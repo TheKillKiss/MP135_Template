@@ -1127,11 +1127,11 @@ __tx_irq_handler
   EXTERN __tx_irq_handler
   EXTERN __tx_fiq_handler
 #else
-  //EXTERN  Undef_Handler
+  EXTERN  Undef_Handler
   EXTERN PUBWEAK  FreeRTOS_SWI_Handler
-  //EXTERN PAbt_Handler
-  //EXTERN DAbt_Handler
-  EXTERN FreeRTOS_IRQ_Handler
+  EXTERN PAbt_Handler
+  EXTERN DAbt_Handler
+  EXTERN RTThread_IRQ_Handler
   EXTERN FIQ_Handler
 #endif
   /* PUBLIC  Vectors */
@@ -1159,7 +1159,7 @@ __vector:                       ; Make this a DATA label, so that stack usage
   LDR    PC, =PAbt_Handler
   LDR    PC, =DAbt_Handler
   NOP
-  LDR    PC, =FreeRTOS_IRQ_Handler
+  LDR    PC, =RTThread_IRQ_Handler
   LDR    PC, =FIQ_Handler
 #endif
 

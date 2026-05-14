@@ -1,14 +1,24 @@
 #include "main.h"
 #include "bsp_led.h"
+#include <rtthread.h>
 
-int main()
-{       
-    HAL_Init();
-    BSP_LED_Init();
+extern int rtthread_startup(void);
 
-    while(1){
+void rt_user_main_entry(void)
+{
+    while (1)
+    {
         BSP_LED_Toggle();
-        HAL_Delay(300);
+        rt_thread_mdelay(500);
+    }
+}
+
+int main(void)
+{
+    rtthread_startup();
+
+    while (1)
+    {
     }
 }
 
