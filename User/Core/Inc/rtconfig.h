@@ -19,13 +19,35 @@
 #define RT_USING_HEAP
 #define RT_USING_SMALL_MEM
 #define RT_USING_SMALL_MEM_AS_HEAP
-#define RT_HEAP_SIZE                   (32 * 1024)
+#define RT_HEAP_SIZE                   (128 * 1024)
 
 #define RT_USING_DEVICE
 #define RT_USING_DEVICE_OPS
+#define RT_USING_MTD_NOR
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
 #define RT_SERIAL_RB_BUFSZ             256
+
+#define RT_USING_DFS
+#define RT_USING_DFS_V1
+#define DFS_USING_POSIX
+#define DFS_USING_WORKDIR
+#define DFS_FILESYSTEMS_MAX            4
+#define DFS_FILESYSTEM_TYPES_MAX       4
+#define DFS_FD_MAX                     16
+#define DFS_PATH_MAX                   256
+#define RT_USING_DFS_ELMFAT
+#define RT_DFS_ELM_DRIVES              2
+#define RT_DFS_ELM_MAX_SECTOR_SIZE     512
+#define RT_DFS_ELM_USE_LFN             0
+#define RT_DFS_ELM_CODE_PAGE           936
+
+/* Board storage device switches */
+#define BSP_USING_EMMC
+#define BSP_USING_W25Q128
+#define BSP_USING_W25Q128_BLOCK
+#define BSP_USING_FS_AUTO_MOUNT_EMMC
+// #define BSP_USING_FS_AUTO_MOUNT_W25Q
 
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE             256
@@ -36,6 +58,8 @@
 #define FINSH_USING_MSH
 #define FINSH_USING_SYMTAB
 #define FINSH_USING_DESCRIPTION
+#define FINSH_USING_HISTORY
+#define FINSH_HISTORY_LINES            5
 #define FINSH_THREAD_NAME              "tshell"
 #define FINSH_THREAD_PRIORITY          20
 #define FINSH_THREAD_STACK_SIZE        2048

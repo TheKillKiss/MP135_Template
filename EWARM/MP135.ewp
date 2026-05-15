@@ -368,6 +368,11 @@
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\libcpu\arm\cortex-a</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\extension</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\extension\fcntl\octal</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1505,6 +1510,11 @@
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\libcpu\arm\cortex-a</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\include</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\extension</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\extension\fcntl\octal</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2292,6 +2302,9 @@
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_shell_port.c</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_filesystem_port.c</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_trap.c</name>
                 </file>
                 <file>
@@ -2309,6 +2322,15 @@
             <name>BSP</name>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_led.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_spi.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_w25q128.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_emmc.c</name>
             </file>
         </group>
         <group>
@@ -2345,6 +2367,9 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_mmc_ex.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_spi.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_pwr.c</name>
@@ -2387,6 +2412,9 @@
                 <file>
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\core\device.c</name>
                 </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\mtd\mtd_nor.c</name>
+                </file>
             </group>
             <group>
                 <name>FinSH</name>
@@ -2401,6 +2429,39 @@
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\shell.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_file.c</name>
+                </file>
+            </group>
+            <group>
+                <name>DFS</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs_file.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs_fs.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs_posix.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\dfs_elm.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\ff.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\ffunicode.c</name>
+                </file>
+            </group>
+            <group>
+                <name>LibC</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\ctime.c</name>
                 </file>
             </group>
             <file>
