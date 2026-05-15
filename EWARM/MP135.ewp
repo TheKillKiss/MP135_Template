@@ -367,6 +367,8 @@
                     <state>$PROJ_DIR$\..\Drivers\BSP\Inc</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\include</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\libcpu\arm\cortex-a</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\include</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1502,6 +1504,8 @@
                     <state>$PROJ_DIR$\..\Drivers\BSP\Inc</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\include</state>
                     <state>$PROJ_DIR$\..\Middleware\RT-Thread\libcpu\arm\cortex-a</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh</state>
+                    <state>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\include</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2295,6 +2299,9 @@
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_trap.c</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_shell_port.c</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_port_iar.s</name>
                 </file>
             </group>
@@ -2326,10 +2333,16 @@
                 <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\kservice.c</name>
             </file>
             <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kerrno.c</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstdio.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstring.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\mem.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\object.c</name>
@@ -2346,6 +2359,36 @@
             <file>
                 <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\timer.c</name>
             </file>
+            <group>
+                <name>FinSH</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\cmd.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_parse.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\shell.c</name>
+                </file>
+            </group>
+            <group>
+                <name>Device</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\core\device.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\ipc\completion_comm.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\ipc\completion_up.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\serial\dev_serial.c</name>
+                </file>
+            </group>
         </group>
     </group>
     <group>

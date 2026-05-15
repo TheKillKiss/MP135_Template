@@ -2,6 +2,10 @@
 #include <rthw.h>
 #include <rtthread.h>
 
+#ifdef RT_USING_FINSH
+extern int finsh_system_init(void);
+#endif
+
 rt_weak void rt_user_main_entry(void)
 {
     while (1)
@@ -49,6 +53,9 @@ int rtthread_startup(void)
     rt_system_timer_thread_init();
     rt_thread_idle_init();
     rt_thread_defunct_init();
+#ifdef RT_USING_FINSH
+    finsh_system_init();
+#endif
     rt_system_scheduler_start();
 
     return 0;

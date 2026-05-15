@@ -10,7 +10,7 @@
 
 - FSBL/boot 阶段已经完成系统时钟初始化，不在应用工程里重复做整套时钟配置。
 - STGEN/PL1 频率按 FSBL 配置适配，当前 FSBL 中 STGEN 选择 HSE，并执行了 `PL1_SetCounterFrequency(HSE_VALUE)`。
-- 当前移植是最小内核版本，暂未启用 heap、console、finsh、device 组件。
+- 当前移植已启用 RT-Thread heap、device 框架和 serial v1 框架；FinSH/MSH 的 shell 串口注册为 `uart4` 设备，RX 使用 UART4 中断接收。
 
 ## 新增文件
 
@@ -20,6 +20,11 @@
   - 单核配置：`RT_CPUS_NR 1`。
   - 静态 main 线程栈：`RT_MAIN_THREAD_STACK_SIZE 1024`。
   - 启用 `RT_USING_NANO`。
+  - 启用 `RT_USING_CONSOLE`、`RT_USING_MSH`、`RT_USING_FINSH`。
+  - 启用 `RT_USING_SEMAPHORE`，供 FinSH shell 结构使用。
+  - 启用 `RT_USING_HEAP`、`RT_USING_SMALL_MEM_AS_HEAP`，当前静态 heap 大小为 32 KiB。
+  - 启用 `RT_USING_DEVICE`、`RT_USING_SERIAL`、`RT_USING_SERIAL_V1`。
+  - `RT_CONSOLE_DEVICE_NAME` 配置为 `"uart4"`。
 
 - `User/Core/Inc/board.h`
   - RT-Thread board 层声明。
@@ -29,14 +34,31 @@
   - 自定义 RT-Thread 启动流程。
   - 初始化 board、timer、scheduler、main 线程、idle 线程、defunct 线程。
   - 使用静态 main 线程，入口通过弱符号 `rt_user_main_entry()` 对接用户应用。
+  - 在调度器启动前手动调用 `finsh_system_init()` 创建 shell 线程。
 
 - `User/Core/Src/rtthread_board.c`
   - 实现 `rt_hw_board_init()`。
+  - 使用静态数组初始化 RT-Thread heap。
   - 实现 PL1 tick 初始化和 `rt_hw_tick_handler()`。
   - 覆盖 `HAL_InitTick()`，避免 HAL 抢占 tick。
+  - 在 board 初始化中注册 UART4 serial device 并设为 console。
   - 实现 GIC IRQ 分发 `rt_hw_trap_irq()`。
   - 实现 RT-Thread 线程栈初始化 `rt_hw_stack_init()`。
   - 定义 RT-Thread 上下文切换所需的全局变量。
+
+- `User/Core/Src/rtthread_shell_port.c`
+  - 定义 `UART_HandleTypeDef huart4`。
+  - 注册 `rt_serial_device`，设备名为 `uart4`。
+  - 默认初始化 UART4 为 115200 8N1。
+  - 使用 `PCLK1` 作为 UART4 内核时钟源。
+  - 使用 PD8/UART4_RX、PD6/UART4_TX，复用功能为 `GPIO_AF8_UART4`。
+  - 实现 `rt_uart_ops`：
+    - `configure`
+    - `control`
+    - `putc`
+    - `getc`
+  - `control(RT_DEVICE_CTRL_SET_INT, RT_DEVICE_FLAG_INT_RX)` 中使能 UART4 RX 中断。
+  - UART4 IRQ 中调用 `rt_hw_serial_isr(&uart4_serial, RT_SERIAL_EVENT_RX_IND)`，由 RT-Thread serial 框架写入 RX FIFO 并唤醒 FinSH。
 
 - `User/Core/Src/rtthread_port_iar.s`
   - IAR ASM Cortex-A7 上下文切换移植。
@@ -79,7 +101,7 @@
 while (1)
 {
     BSP_LED_Toggle();
-    rt_thread_mdelay(300);
+    rt_thread_mdelay(500);
 }
 ```
 
@@ -94,11 +116,14 @@ while (1)
   - 增加 RT-Thread include path：
     - `Middleware/RT-Thread/include`
     - `Middleware/RT-Thread/libcpu/arm/cortex-a`
+    - `Middleware/RT-Thread/components/finsh`
+    - `Middleware/RT-Thread/components/drivers/include`
   - 增加宏：`__RT_KERNEL_SOURCE__`。
   - 加入用户 port 文件：
     - `rtthread_board.c`
     - `rtthread_startup.c`
     - `rtthread_trap.c`
+    - `rtthread_shell_port.c`
     - `rtthread_port_iar.s`
   - 加入 RT-Thread kernel 源码：
     - `clock.c`
@@ -108,13 +133,25 @@ while (1)
     - `irq.c`
     - `ipc.c`
     - `kservice.c`
+    - `klibc/kerrno.c`
     - `klibc/kstdio.c`
     - `klibc/kstring.c`
+    - `mem.c`
     - `object.c`
     - `scheduler_up.c`
     - `scheduler_comm.c`
     - `thread.c`
     - `timer.c`
+  - 加入 FinSH/MSH 源码：
+    - `components/finsh/cmd.c`
+    - `components/finsh/msh.c`
+    - `components/finsh/msh_parse.c`
+    - `components/finsh/shell.c`
+  - 加入 RT-Thread device/serial 源码：
+    - `components/drivers/core/device.c`
+    - `components/drivers/ipc/completion_comm.c`
+    - `components/drivers/ipc/completion_up.c`
+    - `components/drivers/serial/dev_serial.c`
   - 将 CMSIS system 源文件切换为 `system_stm32mp13xx_A7.c`。
   - Release 配置补齐 Cortex-A7/FPU/NEON/linker/entry 设置，使 Debug 和 Release 都可构建。
 
@@ -189,7 +226,50 @@ IAR 下 C 函数通常是 Thumb 奇地址，但初始 PC 是 ARM 汇编函数 `_
 - SWI/Undefined/Prefetch Abort：`pc - 4`
 - Data Abort：`pc - 8`
 
-当前未启用 `RT_USING_CONSOLE`，所以 `rt_kprintf()` 不会输出；调试时直接在 IAR Watch 中查看全局变量。
+当前已启用 `RT_USING_CONSOLE`，异常信息会通过 UART4 shell 口打印；同时仍保留全局变量，便于 IAR Watch 查看现场。
+
+## Device/Serial 与 UART4 Shell
+
+本次更新将 shell 串口从 HAL 轮询 console 改为 RT-Thread device/serial 框架：
+
+1. `rtconfig.h` 打开 `RT_USING_HEAP`、`RT_USING_DEVICE`、`RT_USING_SERIAL`、`RT_USING_SERIAL_V1`。
+2. `rtthread_board.c` 在 board 初始化阶段初始化 32 KiB 静态 RTT heap。
+3. `rtthread_shell_port.c` 注册 `rt_serial_device uart4_serial`，设备名为 `uart4`。
+4. `rt_console_set_device("uart4")` 将 `rt_kprintf()` 输出切到 UART4。
+5. FinSH 启动时通过 console device 自动调用 `finsh_set_device("uart4")`，以 `RT_DEVICE_FLAG_INT_RX` 打开 UART4。
+6. UART4 RX 中断进入 `uart4_irq_handler()`，再调用 `rt_hw_serial_isr()` 写入 serial 框架 RX FIFO 并释放 FinSH 的 RX semaphore。
+
+UART4 硬件配置：
+
+```text
+UART4: 115200, 8 data bits, no parity, 1 stop bit
+Clock: PCLK1
+PD8:   UART4_RX, GPIO_AF8_UART4
+PD6:   UART4_TX, GPIO_AF8_UART4
+```
+
+console 输出路径：
+
+```text
+rt_kprintf()
+  -> rt_device_write(console)
+  -> dev_serial.c
+  -> uart4_putc()
+  -> UART4 TDR polling
+```
+
+shell 输入路径：
+
+```text
+UART4 RXNE IRQ
+  -> uart4_irq_handler()
+  -> rt_hw_serial_isr(..., RT_SERIAL_EVENT_RX_IND)
+  -> serial RX FIFO
+  -> finsh_getchar()
+  -> rt_device_read(shell device)
+```
+
+当前 TX 仍为 polling 输出，RX 已改为中断模式。UART 错误标志 `PE/FE/NE/ORE` 会在 UART4 IRQ 中清除，避免错误状态阻塞后续接收。
 
 ## 已定位并修复的问题
 
@@ -258,14 +338,13 @@ iarbuild C:\Users\Kamisato\Desktop\folder\test\EWARM\MP135.ewp -build Release
 当前结果：
 
 ```text
-Debug:   0 errors, 2 warnings, Build succeeded
-Release: 0 errors, 2 warnings, Build succeeded
+Debug:   0 errors, 1 warning, Build succeeded
+Release: 0 errors, 1 warning, Build succeeded
 ```
 
 剩余 warning 来自 RT-Thread 源码：
 
 ```text
-Middleware\RT-Thread\src\ipc.c(82): _ipc_object_init declared but never referenced
 Middleware\RT-Thread\src\object.c(724): enumerated type mixed with another type
 ```
 
@@ -274,8 +353,11 @@ Middleware\RT-Thread\src\object.c(724): enumerated type mixed with another type
 1. 烧录 Debug。
 2. 确认不再进入 `rt_hw_trap_dabt()`。
 3. 确认 `RTThread_IRQ_Handler -> rt_hw_trap_irq -> rt_hw_tick_handler` 可周期进入。
-4. 确认 `rt_user_main_entry()` 中 LED 以约 300 ms 周期翻转。
-5. 若再次异常，优先查看：
+4. 确认 `rt_user_main_entry()` 中 LED 以约 500 ms 周期翻转。
+5. 串口工具连接 UART4，参数为 115200 8N1。
+6. 复位后应看到 RT-Thread banner 和 `msh >` 提示符。
+7. 输入 `help`、`ps`、`list thread` 验证 shell 可交互。
+8. 若再次异常，优先查看：
    - `rt_hw_exception_name`
    - `rt_hw_exception_fault_pc`
    - `rt_hw_exception_stack`
@@ -284,11 +366,10 @@ Middleware\RT-Thread\src\object.c(724): enumerated type mixed with another type
 
 ## 当前限制和后续方向
 
-- 未启用 `RT_USING_CONSOLE`，RT-Thread banner 和异常打印不会输出。
-- 未启用 heap，当前线程为静态创建。
-- 未接入 finsh/device/lwIP 等组件。
+- 已启用 32 KiB 静态 RTT heap，当前 main 线程仍为静态创建，FinSH/serial RX FIFO 使用 heap。
+- 已接入 RT-Thread device/serial v1 框架，UART4 RX 为中断模式，TX 当前仍为 polling 模式。
+- 未接入 DFS/lwIP 等组件。
 - 如需扩展组件，建议按以下顺序：
-  1. 接 UART console，实现 `rt_hw_console_output()`。
-  2. 打开 `RT_USING_CONSOLE`。
-  3. 接 heap，启用动态线程/对象。
-  4. 再逐步加入 device、finsh、网络组件。
+  1. 将更多板级外设按 `rt_device_register()` 或对应 class driver 注册到 device 框架。
+  2. 如串口输出吞吐量不足，再为 UART4 增加 INT_TX 或 DMA_TX。
+  3. 再逐步加入 DFS、网络组件。

@@ -13,6 +13,11 @@ rt_uint32_t rt_interrupt_from_thread;
 rt_uint32_t rt_interrupt_to_thread;
 rt_uint32_t rt_thread_switch_interrupt_flag;
 
+#ifdef RT_USING_HEAP
+rt_align(RT_ALIGN_SIZE)
+static rt_uint8_t rt_heap[RT_HEAP_SIZE];
+#endif
+
 static rt_uint32_t rt_hw_timer_frequency(void)
 {
     if ((RCC->STGENCKSELR & RCC_STGENCKSELR_STGENSRC) == RCC_STGENCLKSOURCE_HSE)
@@ -60,6 +65,10 @@ void rt_hw_board_init(void)
 {
     HAL_Init();
     BSP_LED_Init();
+#ifdef RT_USING_HEAP
+    rt_system_heap_init(rt_heap, rt_heap + sizeof(rt_heap));
+#endif
+    rt_hw_uart4_console_init();
     rt_hw_tick_init();
 }
 
