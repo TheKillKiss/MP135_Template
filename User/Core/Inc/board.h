@@ -8,6 +8,5 @@
 
 void rt_hw_board_init(void);
 void rt_hw_tick_init(void);
-void rt_hw_uart4_console_init(void);
 
 #endif

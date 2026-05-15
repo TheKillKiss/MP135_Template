@@ -721,7 +721,8 @@ rt_object_t rt_object_find(const char *name, rt_uint8_t type)
     };
 
     /* parameter check */
-    if (name == RT_NULL || rt_object_get_information(type) == RT_NULL)
+    if (name == RT_NULL ||
+        rt_object_get_information((enum rt_object_class_type)type) == RT_NULL)
         return RT_NULL;
 
     /* which is invoke in interrupt status */

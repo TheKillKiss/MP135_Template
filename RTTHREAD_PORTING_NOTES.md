@@ -1,16 +1,16 @@
 # STM32MP135 IAR 工程 RT-Thread 移植记录
 
-记录时间：2026-05-14
+记录时间：2026-05-15
 
 ## 移植目标
 
-在当前 STM32MP135 IAR EWARM 工程中接入 `Middleware/RT-Thread` 下的 RT-Thread 最小内核，使工程能够启动 RT-Thread 调度器，并使用 Cortex-A7 PL1 Secure Physical Timer 作为 RT-Thread tick。
+在当前 STM32MP135 IAR EWARM 工程中接入 `Middleware/RT-Thread` 下的 RT-Thread 内核、组件自动初始化系统和 device 框架，使工程能够启动 RT-Thread 调度器，并使用 Cortex-A7 PL1 Secure Physical Timer 作为 RT-Thread tick。
 
 约束：
 
 - FSBL/boot 阶段已经完成系统时钟初始化，不在应用工程里重复做整套时钟配置。
 - STGEN/PL1 频率按 FSBL 配置适配，当前 FSBL 中 STGEN 选择 HSE，并执行了 `PL1_SetCounterFrequency(HSE_VALUE)`。
-- 当前移植已启用 RT-Thread heap、device 框架和 serial v1 框架；FinSH/MSH 的 shell 串口注册为 `uart4` 设备，RX 使用 UART4 中断接收。
+- 当前移植已启用 `RT_USING_USER_MAIN`、RT-Thread heap、组件自动初始化、device/device ops 框架和 serial v1 框架；FinSH/MSH 的 shell 串口注册为 `uart4` 设备，RX 使用 UART4 中断接收。
 
 ## 新增文件
 
@@ -18,37 +18,40 @@
   - RT-Thread 最小配置。
   - `RT_TICK_PER_SECOND` 为 1000。
   - 单核配置：`RT_CPUS_NR 1`。
-  - 静态 main 线程栈：`RT_MAIN_THREAD_STACK_SIZE 1024`。
-  - 启用 `RT_USING_NANO`。
+  - main 线程栈大小：`RT_MAIN_THREAD_STACK_SIZE 1024`。
+  - 启用 `RT_USING_USER_MAIN`，由 RT-Thread 原生 `components.c` 接管启动并在线程中调用用户 `main()`。
+  - 启用 `RT_USING_COMPONENTS_INIT`，接入 RT-Thread 组件自动初始化机制。
   - 启用 `RT_USING_CONSOLE`、`RT_USING_MSH`、`RT_USING_FINSH`。
   - 启用 `RT_USING_SEMAPHORE`，供 FinSH shell 结构使用。
   - 启用 `RT_USING_HEAP`、`RT_USING_SMALL_MEM_AS_HEAP`，当前静态 heap 大小为 32 KiB。
-  - 启用 `RT_USING_DEVICE`、`RT_USING_SERIAL`、`RT_USING_SERIAL_V1`。
+  - 启用 `RT_USING_DEVICE`、`RT_USING_DEVICE_OPS`、`RT_USING_SERIAL`、`RT_USING_SERIAL_V1`。
   - `RT_CONSOLE_DEVICE_NAME` 配置为 `"uart4"`。
 
 - `User/Core/Inc/board.h`
   - RT-Thread board 层声明。
   - tick 中断优先级定义为 `RT_TICK_IRQ_PRIORITY 0xA0U`，与已有 uCOS 工程保持一致。
 
-- `User/Core/Src/rtthread_startup.c`
-  - 自定义 RT-Thread 启动流程。
-  - 初始化 board、timer、scheduler、main 线程、idle 线程、defunct 线程。
-  - 使用静态 main 线程，入口通过弱符号 `rt_user_main_entry()` 对接用户应用。
-  - 在调度器启动前手动调用 `finsh_system_init()` 创建 shell 线程。
+- `User/Core/Inc/sys/types.h`
+- `User/Core/Inc/sys/errno.h`
+  - 当前工程切到非 Nano 配置后，RT-Thread `rttypes.h` 会包含 `sys/types.h` 和 `sys/errno.h`。
+  - IAR 当前 DLib include 路径没有提供这两个 POSIX 风格头文件，因此在用户 include 目录下补充最小兼容头。
 
 - `User/Core/Src/rtthread_board.c`
   - 实现 `rt_hw_board_init()`。
   - 使用静态数组初始化 RT-Thread heap。
+  - 调用 `rt_components_board_init()`，执行 board 阶段自动初始化。
+  - 不再手动调用 `rt_hw_uart4_console_init()`；UART4 console 由 `INIT_BOARD_EXPORT` 挂入 board 初始化阶段。
   - 实现 PL1 tick 初始化和 `rt_hw_tick_handler()`。
   - 覆盖 `HAL_InitTick()`，避免 HAL 抢占 tick。
-  - 在 board 初始化中注册 UART4 serial device 并设为 console。
   - 实现 GIC IRQ 分发 `rt_hw_trap_irq()`。
   - 实现 RT-Thread 线程栈初始化 `rt_hw_stack_init()`。
   - 定义 RT-Thread 上下文切换所需的全局变量。
+  - 不再在 board 层自定义 `rt_hw_cpu_shutdown()`，当前使用 RT-Thread `kservice.c` 中的 weak 默认实现；后续如果需要平台级关机/低功耗，再单独补强实现。
 
 - `User/Core/Src/rtthread_shell_port.c`
   - 定义 `UART_HandleTypeDef huart4`。
   - 注册 `rt_serial_device`，设备名为 `uart4`。
+  - 使用 `INIT_BOARD_EXPORT(rt_hw_uart4_console_init)` 进入组件初始化表，在 board 阶段注册 UART4 并设为 console。
   - 默认初始化 UART4 为 115200 8N1。
   - 使用 `PCLK1` 作为 UART4 内核时钟源。
   - 使用 PD8/UART4_RX、PD6/UART4_TX，复用功能为 `GPIO_AF8_UART4`。
@@ -72,7 +75,7 @@
     - `RTThread_IRQ_Handler`
     - `_thread_start`
   - 对接异常入口：
-    - `FreeRTOS_SWI_Handler`
+    - `SWI_Handler`
     - `Undef_Handler`
     - `PAbt_Handler`
     - `DAbt_Handler`
@@ -94,8 +97,8 @@
 ## 修改文件
 
 - `User/Core/Src/main.c`
-  - `main()` 改为调用 `rtthread_startup()`。
-  - 新增 `rt_user_main_entry()`，当前用于周期翻转 LED：
+  - `main()` 现在作为 RT-Thread main 线程中的用户入口，由 `components.c` 的 `main_thread_entry()` 调用。
+  - `main()` 调用 `rt_user_main_entry()`，当前用于周期翻转 LED：
 
 ```c
 while (1)
@@ -107,6 +110,7 @@ while (1)
 
 - `Drivers/CMSIS/Device/Source/IAR/startup_stm32mp135dxx_ca7_rtos.s`
   - IRQ 向量入口指向 `RTThread_IRQ_Handler`。
+  - SWI 向量从原来的 `FreeRTOS_SWI_Handler` 切换为当前 RTT port 中实现的 `SWI_Handler`。
   - 异常向量改为引用当前 port 中实现的：
     - `Undef_Handler`
     - `PAbt_Handler`
@@ -121,12 +125,12 @@ while (1)
   - 增加宏：`__RT_KERNEL_SOURCE__`。
   - 加入用户 port 文件：
     - `rtthread_board.c`
-    - `rtthread_startup.c`
     - `rtthread_trap.c`
     - `rtthread_shell_port.c`
     - `rtthread_port_iar.s`
   - 加入 RT-Thread kernel 源码：
     - `clock.c`
+    - `components.c`
     - `cpu_up.c`
     - `defunct.c`
     - `idle.c`
@@ -178,6 +182,31 @@ rt_tick_increase();
 ```
 
 这样可以补偿一部分中断进入延迟。
+
+## 启动模式
+
+当前工程启用 `RT_USING_USER_MAIN`，采用 RT-Thread 原生 user main 启动模式。
+
+IAR 下启动链为：
+
+```text
+Reset_Handler
+  -> __cmain
+  -> components.c::__low_level_init()
+  -> __iar_data_init3()
+  -> startup_stm32mp135dxx_ca7_rtos.s::__iar_data_init_done()
+  -> SystemInit()
+  -> components.c::rtthread_startup()
+  -> rt_hw_board_init()
+  -> rt_application_init()
+  -> rt_system_scheduler_start()
+  -> main thread
+  -> components.c::main_thread_entry()
+  -> rt_components_init()
+  -> User/Core/Src/main.c::main()
+```
+
+因此 `main()` 不再手动调用 `rtthread_startup()`；它已经运行在 RT-Thread 的 main 线程上下文中。工程中不再保留自定义 `User/Core/Src/rtthread_startup.c`，启动实现统一使用 `Middleware/RT-Thread/src/components.c`。
 
 ## 上下文切换关键点
 
@@ -232,12 +261,14 @@ IAR 下 C 函数通常是 Thumb 奇地址，但初始 PC 是 ARM 汇编函数 `_
 
 本次更新将 shell 串口从 HAL 轮询 console 改为 RT-Thread device/serial 框架：
 
-1. `rtconfig.h` 打开 `RT_USING_HEAP`、`RT_USING_DEVICE`、`RT_USING_SERIAL`、`RT_USING_SERIAL_V1`。
-2. `rtthread_board.c` 在 board 初始化阶段初始化 32 KiB 静态 RTT heap。
-3. `rtthread_shell_port.c` 注册 `rt_serial_device uart4_serial`，设备名为 `uart4`。
-4. `rt_console_set_device("uart4")` 将 `rt_kprintf()` 输出切到 UART4。
-5. FinSH 启动时通过 console device 自动调用 `finsh_set_device("uart4")`，以 `RT_DEVICE_FLAG_INT_RX` 打开 UART4。
-6. UART4 RX 中断进入 `uart4_irq_handler()`，再调用 `rt_hw_serial_isr()` 写入 serial 框架 RX FIFO 并释放 FinSH 的 RX semaphore。
+1. `rtconfig.h` 打开 `RT_USING_USER_MAIN`、`RT_USING_COMPONENTS_INIT`、`RT_USING_HEAP`、`RT_USING_DEVICE`、`RT_USING_DEVICE_OPS`、`RT_USING_SERIAL`、`RT_USING_SERIAL_V1`。
+2. `EWARM/MP135.ewp` 加入 `Middleware/RT-Thread/src/components.c`。
+3. `rtthread_board.c` 在 board 初始化阶段初始化 32 KiB 静态 RTT heap，并调用 `rt_components_board_init()`。
+4. `rtthread_shell_port.c` 通过 `INIT_BOARD_EXPORT(rt_hw_uart4_console_init)` 注册 `rt_serial_device uart4_serial`，设备名为 `uart4`。
+5. `rt_console_set_device("uart4")` 将 `rt_kprintf()` 输出切到 UART4。
+6. main 线程入口调用 `rt_components_init()`，FinSH 由 `INIT_APP_EXPORT(finsh_system_init)` 自动创建 shell 线程。
+7. FinSH 启动时通过 console device 自动调用 `finsh_set_device("uart4")`，以 `RT_DEVICE_FLAG_INT_RX` 打开 UART4。
+8. UART4 RX 中断进入 `uart4_irq_handler()`，再调用 `rt_hw_serial_isr()` 写入 serial 框架 RX FIFO 并释放 FinSH 的 RX semaphore。
 
 UART4 硬件配置：
 
@@ -353,10 +384,10 @@ Middleware\RT-Thread\src\object.c(724): enumerated type mixed with another type
 1. 烧录 Debug。
 2. 确认不再进入 `rt_hw_trap_dabt()`。
 3. 确认 `RTThread_IRQ_Handler -> rt_hw_trap_irq -> rt_hw_tick_handler` 可周期进入。
-4. 确认 `rt_user_main_entry()` 中 LED 以约 500 ms 周期翻转。
+4. 确认 `main()` 已在 RT-Thread main 线程中运行，并通过 `rt_user_main_entry()` 让 LED 以约 500 ms 周期翻转。
 5. 串口工具连接 UART4，参数为 115200 8N1。
 6. 复位后应看到 RT-Thread banner 和 `msh >` 提示符。
-7. 输入 `help`、`ps`、`list thread` 验证 shell 可交互。
+7. 输入 `help`、`ps`、`list thread`、`list device` 验证 shell 可交互。
 8. 若再次异常，优先查看：
    - `rt_hw_exception_name`
    - `rt_hw_exception_fault_pc`
@@ -366,8 +397,8 @@ Middleware\RT-Thread\src\object.c(724): enumerated type mixed with another type
 
 ## 当前限制和后续方向
 
-- 已启用 32 KiB 静态 RTT heap，当前 main 线程仍为静态创建，FinSH/serial RX FIFO 使用 heap。
-- 已接入 RT-Thread device/serial v1 框架，UART4 RX 为中断模式，TX 当前仍为 polling 模式。
+- 已启用 32 KiB 静态 RTT heap；在 `RT_USING_USER_MAIN` + `RT_USING_HEAP` 模式下，RT-Thread 原生 `rt_application_init()` 使用 heap 创建 main 线程，FinSH/serial RX FIFO 也使用 heap。
+- 已接入 RT-Thread 组件自动初始化系统和 device ops 框架，UART4 RX 为中断模式，TX 当前仍为 polling 模式。
 - 未接入 DFS/lwIP 等组件。
 - 如需扩展组件，建议按以下顺序：
   1. 将更多板级外设按 `rt_device_register()` 或对应 class driver 注册到 device 框架。

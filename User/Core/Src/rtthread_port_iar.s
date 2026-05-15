@@ -126,8 +126,8 @@ _thread_halt
         EXTERN  rt_hw_trap_dabt
         EXTERN  rt_hw_trap_resv
 
-        PUBLIC  FreeRTOS_SWI_Handler
-FreeRTOS_SWI_Handler
+        PUBLIC  SWI_Handler
+SWI_Handler
         SUB     SP, SP, #68
         STMIA   SP, {R0-R12}
         MOV     R0, SP

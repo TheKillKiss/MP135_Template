@@ -25,7 +25,7 @@ static const struct rt_uart_ops uart4_ops =
     RT_NULL
 };
 
-void rt_hw_uart4_console_init(void)
+static int rt_hw_uart4_console_init(void)
 {
     rt_err_t result;
 
@@ -40,7 +40,9 @@ void rt_hw_uart4_console_init(void)
     RT_ASSERT(result == RT_EOK);
 
     rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+    return (int)result;
 }
+INIT_BOARD_EXPORT(rt_hw_uart4_console_init);
 
 void HAL_UART_MspInit(UART_HandleTypeDef *uart_handle)
 {

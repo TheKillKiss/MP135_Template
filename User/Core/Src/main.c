@@ -2,8 +2,6 @@
 #include "bsp_led.h"
 #include <rtthread.h>
 
-extern int rtthread_startup(void);
-
 void rt_user_main_entry(void)
 {
     while (1)
@@ -15,11 +13,8 @@ void rt_user_main_entry(void)
 
 int main(void)
 {
-    rtthread_startup();
-
-    while (1)
-    {
-    }
+    rt_user_main_entry();
+    return 0;
 }
 
 void Error_Handler(void)

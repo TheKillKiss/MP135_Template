@@ -12,7 +12,8 @@
 #define RT_MAIN_THREAD_PRIORITY        10
 #define RT_BACKTRACE_LEVEL_MAX_NR      16
 #define RT_KLIBC_USING_LIBC_VSNPRINTF
-#define RT_USING_NANO
+#define RT_USING_USER_MAIN
+#define RT_USING_COMPONENTS_INIT
 #define RT_USING_SEMAPHORE
 #define RT_USING_MUTEX
 #define RT_USING_HEAP
@@ -21,6 +22,7 @@
 #define RT_HEAP_SIZE                   (32 * 1024)
 
 #define RT_USING_DEVICE
+#define RT_USING_DEVICE_OPS
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
 #define RT_SERIAL_RB_BUFSZ             256

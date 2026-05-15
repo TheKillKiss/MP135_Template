@@ -234,7 +234,6 @@
                     <state>USE_HAL_DRIVER</state>
                     <state>STM32MP135Dxx</state>
                     <state>CORE_CA7</state>
-                    <state>NO_CACHE_USE</state>
                     <state>NO_MMU_USE</state>
                     <state>DDR_TYPE_DDR3_4Gb</state>
                     <state>__RT_KERNEL_SOURCE__</state>
@@ -2284,109 +2283,22 @@
                     <name>$PROJ_DIR$\..\User\Core\Src\main.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_hal_msp.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_it.c</name>
-                </file>
-                <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_board.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_startup.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_trap.c</name>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_port_iar.s</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_shell_port.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_port_iar.s</name>
-                </file>
-            </group>
-        </group>
-    </group>
-    <group>
-        <name>Middleware</name>
-        <group>
-            <name>RT-Thread</name>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\clock.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\cpu_up.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\defunct.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\idle.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\irq.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\ipc.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\kservice.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kerrno.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstdio.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstring.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\mem.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\object.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\scheduler_up.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\scheduler_comm.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\thread.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\timer.c</name>
-            </file>
-            <group>
-                <name>FinSH</name>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\cmd.c</name>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_trap.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh.c</name>
+                    <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_hal_msp.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_parse.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\shell.c</name>
-                </file>
-            </group>
-            <group>
-                <name>Device</name>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\core\device.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\ipc\completion_comm.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\ipc\completion_up.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\serial\dev_serial.c</name>
+                    <name>$PROJ_DIR$\..\User\Core\Src\stm32mp13xx_it.c</name>
                 </file>
             </group>
         </group>
@@ -2454,6 +2366,93 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_ll_sdmmc.c</name>
+            </file>
+        </group>
+    </group>
+    <group>
+        <name>Middleware</name>
+        <group>
+            <name>RT-Thread</name>
+            <group>
+                <name>Device</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\ipc\completion_comm.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\ipc\completion_up.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\serial\dev_serial.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\drivers\core\device.c</name>
+                </file>
+            </group>
+            <group>
+                <name>FinSH</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\cmd.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_parse.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\shell.c</name>
+                </file>
+            </group>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\clock.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\components.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\cpu_up.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\defunct.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\idle.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\ipc.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\irq.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kerrno.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\kservice.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstdio.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\klibc\kstring.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\mem.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\object.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\scheduler_comm.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\scheduler_up.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\thread.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middleware\RT-Thread\src\timer.c</name>
             </file>
         </group>
     </group>

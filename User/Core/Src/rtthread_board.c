@@ -68,7 +68,9 @@ void rt_hw_board_init(void)
 #ifdef RT_USING_HEAP
     rt_system_heap_init(rt_heap, rt_heap + sizeof(rt_heap));
 #endif
-    rt_hw_uart4_console_init();
+#ifdef RT_USING_COMPONENTS_INIT
+    rt_components_board_init();
+#endif
     rt_hw_tick_init();
 }
 
@@ -142,12 +144,4 @@ rt_bool_t rt_hw_interrupt_is_disabled(void)
 
     rt_hw_interrupt_enable(level);
     return disabled;
-}
-
-void rt_hw_cpu_shutdown(void)
-{
-    rt_hw_interrupt_disable();
-    while (1)
-    {
-    }
 }
