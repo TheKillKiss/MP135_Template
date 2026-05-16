@@ -30,14 +30,16 @@
 #define RT_USING_SEMAPHORE
 /* 启用互斥量 IPC 对象。 */
 #define RT_USING_MUTEX
+/* 启用邮箱 IPC 对象，lwIP 的 tcpip/ethernetif 线程间投递消息会使用。 */
+#define RT_USING_MAILBOX
 /* 启用动态堆内存管理。 */
 #define RT_USING_HEAP
 /* 启用 small memory 小内存堆算法。 */
 #define RT_USING_SMALL_MEM
 /* 将 small memory 作为系统 heap 实现。 */
 #define RT_USING_SMALL_MEM_AS_HEAP
-/* 静态分配给 RT-Thread 的系统堆大小。 */
-#define RT_HEAP_SIZE                   (128 * 1024)
+/* 静态分配给 RT-Thread 的系统堆大小；当前链接脚本将 RW 放在 DDR2，先保留 256KB 给 lwIP/socket/DFS 使用。 */
+#define RT_HEAP_SIZE                   (256 * 1024)
 
 /* 启用 RT-Thread device 设备框架。 */
 #define RT_USING_DEVICE
@@ -90,6 +92,82 @@
 #define BSP_USING_FS_AUTO_MOUNT_EMMC
 /* 启动时自动将 w25q0 以 elmfat 挂载到根目录 /；不能和 BSP_USING_FS_AUTO_MOUNT_EMMC 同时开启。 */
 // #define BSP_USING_FS_AUTO_MOUNT_W25Q
+/* 启用 ETH1 + YT8531C PHY BSP 初始化，并注册 RTT lwIP 网卡设备 e0。 */
+#define BSP_USING_ETH
+/* ETH 使用静态 IP 初始化。 */
+#define BSP_ETH_IP_MODE_STATIC          0
+/* ETH 使用 DHCP 初始化。 */
+#define BSP_ETH_IP_MODE_DHCP            1
+/* ETH IP 初始化模式：改成 BSP_ETH_IP_MODE_DHCP 即启用 DHCP，默认静态 IP。 */
+#define BSP_ETH_IP_MODE                 BSP_ETH_IP_MODE_STATIC
+
+/* 启用 RT-Thread 自带 lwIP 网络协议栈组件。 */
+#define RT_USING_LWIP
+/* 选择 lwIP 2.1.2 版本。 */
+#define RT_USING_LWIP212
+/* lwIP 版本号，RT-Thread port 层用于条件编译。 */
+#define RT_USING_LWIP_VER_NUM          0x20102
+/* lwIP 内存对齐粒度，ETH DMA buffer/cache 以 32 字节 cache line 对齐更稳妥。 */
+#define RT_LWIP_MEM_ALIGNMENT          32
+/* 以太网帧前预留 2 字节，使 14 字节以太网头后的 IP 头按 4 字节对齐，避免 Cortex-A7 unaligned data abort。 */
+#define RT_LWIP_ETH_PAD_SIZE           2
+/* ETH RX DMA 使用 custom pbuf 将 DMA buffer 直接交给 lwIP。 */
+#define LWIP_SUPPORT_CUSTOM_PBUF       1
+/* 启用 ICMP，支持 ping。 */
+#define RT_LWIP_ICMP
+/* 启用 DNS 客户端。 */
+#define RT_LWIP_DNS
+/* 启用 UDP 协议。 */
+#define RT_LWIP_UDP
+/* 启用 TCP 协议。 */
+#define RT_LWIP_TCP
+/* 启用 RAW socket，ping 命令需要。 */
+#define RT_LWIP_RAW
+/* 启用 RT-Thread lwIP ping 命令。 */
+#define RT_LWIP_USING_PING
+
+#if (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_DHCP)
+/* DHCP 模式：网卡初始地址为 0.0.0.0，由 DHCP 客户端获取 IP/网关/掩码。 */
+#define RT_LWIP_DHCP
+#elif (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_STATIC)
+/* 静态 IP 模式：不启用 DHCP，使用下面固定地址。 */
+#undef RT_LWIP_DHCP
+#else
+#error "Invalid BSP_ETH_IP_MODE"
+#endif
+
+/* 静态 IP 地址，固定为 192.168.6.6。 */
+#define RT_LWIP_IPADDR                 "192.168.6.6"
+/* 静态网关地址。 */
+#define RT_LWIP_GWADDR                 "192.168.6.1"
+/* 静态子网掩码。 */
+#define RT_LWIP_MSKADDR                "255.255.255.0"
+/* lwIP pbuf pool 数量。 */
+#define RT_LWIP_PBUF_NUM               16
+/* RAW PCB 数量。 */
+#define RT_LWIP_RAW_PCB_NUM            4
+/* UDP PCB 数量。 */
+#define RT_LWIP_UDP_PCB_NUM            4
+/* TCP PCB 数量。 */
+#define RT_LWIP_TCP_PCB_NUM            4
+/* TCP segment 数量。 */
+#define RT_LWIP_TCP_SEG_NUM            16
+/* TCP 发送缓冲区大小。 */
+#define RT_LWIP_TCP_SND_BUF            4096
+/* TCP 接收窗口大小。 */
+#define RT_LWIP_TCP_WND                4096
+/* lwIP tcpip 线程优先级。 */
+#define RT_LWIP_TCPTHREAD_PRIORITY     12
+/* lwIP tcpip 线程栈大小。 */
+#define RT_LWIP_TCPTHREAD_STACKSIZE    2048
+/* lwIP tcpip 线程邮箱大小。 */
+#define RT_LWIP_TCPTHREAD_MBOX_SIZE    8
+/* RT-Thread ethernetif 收发线程优先级。 */
+#define RT_LWIP_ETHTHREAD_PRIORITY     13
+/* RT-Thread ethernetif 收发线程栈大小。 */
+#define RT_LWIP_ETHTHREAD_STACKSIZE    2048
+/* RT-Thread ethernetif 收发线程邮箱大小。 */
+#define RT_LWIP_ETHTHREAD_MBOX_SIZE    8
 
 /* 启用 RT-Thread 控制台输出。 */
 #define RT_USING_CONSOLE

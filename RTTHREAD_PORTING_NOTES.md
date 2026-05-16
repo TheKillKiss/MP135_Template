@@ -4,7 +4,7 @@
 
 ## 移植目标
 
-在当前 STM32MP135 IAR EWARM 工程中接入 `Middleware/RT-Thread` 下的 RT-Thread 内核、组件初始化系统、device 框架、UART4 shell，以及基于 eMMC/W25Q128 的 RTT DFS 文件系统。
+在当前 STM32MP135 IAR EWARM 工程中接入 `Middleware/RT-Thread` 下的 RT-Thread 内核、组件初始化系统、device 框架、UART4 shell、基于 eMMC/W25Q128 的 RTT DFS 文件系统，以及 RT-Thread 自带 lwIP 2.1.2 网络组件。
 
 约束：
 - FSBL/boot 阶段已经完成系统时钟初始化，应用工程不重复做整套时钟树配置。
@@ -18,7 +18,8 @@
 - `RT_USING_COMPONENTS_INIT`
 - `RT_USING_HEAP`
 - `RT_USING_SMALL_MEM_AS_HEAP`
-- `RT_HEAP_SIZE (128 * 1024)`
+- `RT_USING_MAILBOX`
+- `RT_HEAP_SIZE (256 * 1024)`
 - `RT_USING_DEVICE`
 - `RT_USING_DEVICE_OPS`
 - `RT_USING_SERIAL`
@@ -33,6 +34,19 @@
 - `RT_CONSOLE_DEVICE_NAME "uart4"`
 - `RT_USING_MSH`
 - `RT_USING_FINSH`
+- `RT_USING_LWIP`
+- `RT_USING_LWIP212`
+- `RT_USING_LWIP_VER_NUM 0x20102`
+- `RT_LWIP_ICMP`
+- `RT_LWIP_DNS`
+- `RT_LWIP_UDP`
+- `RT_LWIP_TCP`
+- `RT_LWIP_RAW`
+- `RT_LWIP_USING_PING`
+- `RT_LWIP_ETH_PAD_SIZE 2`
+- `LWIP_SUPPORT_CUSTOM_PBUF 1`
+- `BSP_USING_ETH`
+- `BSP_ETH_IP_MODE`
 
 ## 启动链路
 
@@ -119,6 +133,32 @@ FinSH/MSH 由 `INIT_APP_EXPORT(finsh_system_init)` 自动创建 shell 线程。
 ```text
 list device
 ```
+
+## lwIP / ETH1
+
+本次网络移植使用 RT-Thread 自带 lwIP 组件，不直接使用外部工程的裸 lwIP `ethernetif.c`：
+- 协议栈版本：`Middleware/RT-Thread/components/net/lwip/lwip-2.1.2`
+- RTT port 层：`components/net/lwip/port/sys_arch.c`、`components/net/lwip/port/ethernetif.c`
+- 网卡设备名：`e0`
+- MAC：`00:80:E1:00:00:00`
+- IP 初始化模式由 `BSP_ETH_IP_MODE` 选择：
+  - `BSP_ETH_IP_MODE_STATIC`：静态 IP，固定 `192.168.6.6/255.255.255.0`，网关 `192.168.6.1`
+  - `BSP_ETH_IP_MODE_DHCP`：启用 `RT_LWIP_DHCP`，由 DHCP 获取地址
+
+新增 BSP 文件：
+- `Drivers/BSP/Src/bsp_eth.c` / `Drivers/BSP/Inc/bsp_eth.h`
+- `Drivers/BSP/Src/bsp_yt8531c.c` / `Drivers/BSP/Inc/bsp_yt8531c.h`
+
+`bsp_eth.c` 做的事情：
+- 复用外部参考工程的 ETH1 RGMII GPIO/clock 配置。
+- 在 `HAL_ETH_MspInit()` 中通过 `IRQ_SetHandler(ETH1_IRQn, bsp_eth_irq_handler)` 对接当前 RTT/GIC IRQ 框架。
+- 通过 `struct eth_device` 向 RTT lwIP port 注册网卡。
+- RX 完成回调 `HAL_ETH_RxCpltCallback()` 中调用 `eth_device_ready(&eth_device)`。
+- 链路线程周期读取 YT8531C link state，变化时调用 `eth_device_linkchange()`。
+- Debug 配置开启 cache 时，对 ETH TX/RX buffer 做 32 字节 cache clean/invalidate。
+- `RT_LWIP_ETH_PAD_SIZE` 固定为 `2`，RX DMA buffer 返回给 HAL 时跳过 2 字节；lwIP 解析时会去掉该 pad，使 14 字节以太网头后的 IP 头按 4 字节对齐，避免 Cortex-A7 非对齐访问触发 data abort。
+- TX 路径在拷贝发送帧前调用 `pbuf_remove_header(p, ETH_PAD_SIZE)` 去掉 lwIP 预留 pad，发送完成后用 `pbuf_add_header(p, ETH_PAD_SIZE)` 恢复 pbuf 头部。
+- RX 使用 `pbuf_alloced_custom()` 直接包装 DMA buffer，因此 `LWIP_SUPPORT_CUSTOM_PBUF` 必须开启。
 
 ## 文件系统移植
 

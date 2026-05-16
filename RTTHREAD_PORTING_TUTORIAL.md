@@ -16,6 +16,7 @@
   - `emmc0`：eMMC user 区 block device
   - `w25q`：W25Q128 MTD NOR device
   - `w25q0`：W25Q128 512 字节逻辑 block device，用于 FAT/DFS
+- 网络：RT-Thread 自带 lwIP 2.1.2，ETH1 + YT8531C，网卡设备 `e0`
 
 ## 1. 分支修改记录
 
@@ -27,6 +28,7 @@
 | `f10d351` | `deivce_uart4` | 引入 device/serial/FinSH，UART4 注册为 RTT serial console，shell 通过 UART4 中断接收。 |
 | `e5931dc` | `comp+device 修复警告 开启cache` | 切到 RTT 原生 `components.c` 启动链；删除自定义 startup C 文件；补 POSIX 兼容头；修复 IAR `Pe188` 枚举混用警告；更新 IAR 工程配置。 |
 | `3519a41` | `DFSv1` | 引入 DFS v1、elmfat、W25Q128/eMMC BSP，注册 RTT block/MTD 设备并支持自动挂载。 |
+| 当前工作区 | `lwIP/ETH1` | 引入 RTT lwIP 2.1.2、ETH1 BSP、YT8531C PHY，支持静态 IP/DHCP、ping、RX custom pbuf、cache 维护和 `ETH_PAD_SIZE=2` 对齐。 |
 
 涉及文件：
 
@@ -45,9 +47,13 @@ User/Core/Src/stm32mp13xx_it.c
 Drivers/BSP/Inc/bsp_spi.h
 Drivers/BSP/Inc/bsp_w25q128.h
 Drivers/BSP/Inc/bsp_emmc.h
+Drivers/BSP/Inc/bsp_eth.h
+Drivers/BSP/Inc/bsp_yt8531c.h
 Drivers/BSP/Src/bsp_spi.c
 Drivers/BSP/Src/bsp_w25q128.c
 Drivers/BSP/Src/bsp_emmc.c
+Drivers/BSP/Src/bsp_eth.c
+Drivers/BSP/Src/bsp_yt8531c.c
 Drivers/CMSIS/Device/Source/IAR/startup_stm32mp135dxx_ca7_rtos.s
 Drivers/CMSIS/Device/Source/IAR/linker/stm32mp13xx_a7_ddr.icf
 Middleware/RT-Thread/src/object.c
@@ -72,6 +78,7 @@ Middleware/RT-Thread/components/finsh
 Middleware/RT-Thread/components/drivers
 Middleware/RT-Thread/components/dfs/dfs_v1
 Middleware/RT-Thread/components/libc/compilers/common
+Middleware/RT-Thread/components/net/lwip
 ```
 
 额外 BSP 驱动来自旧工程或外部驱动目录，最终放入当前工程：
@@ -80,9 +87,13 @@ Middleware/RT-Thread/components/libc/compilers/common
 Drivers/BSP/Inc/bsp_spi.h
 Drivers/BSP/Inc/bsp_w25q128.h
 Drivers/BSP/Inc/bsp_emmc.h
+Drivers/BSP/Inc/bsp_eth.h
+Drivers/BSP/Inc/bsp_yt8531c.h
 Drivers/BSP/Src/bsp_spi.c
 Drivers/BSP/Src/bsp_w25q128.c
 Drivers/BSP/Src/bsp_emmc.c
+Drivers/BSP/Src/bsp_eth.c
+Drivers/BSP/Src/bsp_yt8531c.c
 ```
 
 ## 3. IAR 工程配置
@@ -118,6 +129,12 @@ $PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat
 $PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\include
 $PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\extension
 $PROJ_DIR$\..\Middleware\RT-Thread\components\libc\compilers\common\extension\fcntl\octal
+$PROJ_DIR$\..\Middleware\RT-Thread\components\net\lwip\port
+$PROJ_DIR$\..\Middleware\RT-Thread\components\net\lwip\port\arch
+$PROJ_DIR$\..\Middleware\RT-Thread\components\net\lwip\port\netif
+$PROJ_DIR$\..\Middleware\RT-Thread\components\net\lwip\lwip-2.1.2\src\include
+$PROJ_DIR$\..\Middleware\RT-Thread\components\net\lwip\lwip-2.1.2\src\include\netif
+$PROJ_DIR$\..\Middleware\RT-Thread\components\net\lwip\lwip-2.1.2\src\include\compat\posix
 ```
 
 ### 3.3 IAR 入口和链接脚本
@@ -170,6 +187,8 @@ BSP 新增：
 Drivers/BSP/Src/bsp_spi.c
 Drivers/BSP/Src/bsp_w25q128.c
 Drivers/BSP/Src/bsp_emmc.c
+Drivers/BSP/Src/bsp_eth.c
+Drivers/BSP/Src/bsp_yt8531c.c
 ```
 
 RT-Thread 内核源文件加入：
@@ -232,6 +251,52 @@ LibC 辅助：
 Middleware/RT-Thread/components/libc/compilers/common/ctime.c
 ```
 
+lwIP 2.1.2：
+
+```text
+Middleware/RT-Thread/components/net/lwip/port/ethernetif.c
+Middleware/RT-Thread/components/net/lwip/port/sys_arch.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/altcp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/altcp_alloc.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/altcp_tcp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/def.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/dns.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/inet_chksum.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/init.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ip.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/memp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/netif.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/pbuf.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/raw.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/stats.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/sys.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/tcp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/tcp_in.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/tcp_out.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/timeouts.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/udp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/autoip.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/dhcp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/etharp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/icmp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/igmp.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/ip4.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/ip4_addr.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/core/ipv4/ip4_frag.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/api_lib.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/api_msg.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/err.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/if_api.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/netbuf.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/netdb.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/netifapi.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/sockets.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/tcpip.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/netif/ethernet.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/netif/lowpan6.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/apps/ping/ping.c
+```
+
 ## 4. 创建 rtconfig.h
 
 新增 `User/Core/Inc/rtconfig.h`：
@@ -269,14 +334,16 @@ Middleware/RT-Thread/components/libc/compilers/common/ctime.c
 #define RT_USING_SEMAPHORE
 /* 启用互斥量 IPC 对象。 */
 #define RT_USING_MUTEX
+/* 启用邮箱 IPC 对象，lwIP 的 tcpip/ethernetif 线程间投递消息会使用。 */
+#define RT_USING_MAILBOX
 /* 启用动态堆内存管理。 */
 #define RT_USING_HEAP
 /* 启用 small memory 小内存堆算法。 */
 #define RT_USING_SMALL_MEM
 /* 将 small memory 作为系统 heap 实现。 */
 #define RT_USING_SMALL_MEM_AS_HEAP
-/* 静态分配给 RT-Thread 的系统堆大小。 */
-#define RT_HEAP_SIZE                   (128 * 1024)
+/* 静态分配给 RT-Thread 的系统堆大小；当前链接脚本将 RW 放在 DDR2，先保留 256KB 给 lwIP/socket/DFS 使用。 */
+#define RT_HEAP_SIZE                   (256 * 1024)
 
 /* 启用 RT-Thread device 设备框架。 */
 #define RT_USING_DEVICE
@@ -329,6 +396,82 @@ Middleware/RT-Thread/components/libc/compilers/common/ctime.c
 #define BSP_USING_FS_AUTO_MOUNT_EMMC
 /* 启动时自动将 w25q0 以 elmfat 挂载到根目录 /；不能和 BSP_USING_FS_AUTO_MOUNT_EMMC 同时开启。 */
 // #define BSP_USING_FS_AUTO_MOUNT_W25Q
+/* 启用 ETH1 + YT8531C PHY BSP 初始化，并注册 RTT lwIP 网卡设备 e0。 */
+#define BSP_USING_ETH
+/* ETH 使用静态 IP 初始化。 */
+#define BSP_ETH_IP_MODE_STATIC          0
+/* ETH 使用 DHCP 初始化。 */
+#define BSP_ETH_IP_MODE_DHCP            1
+/* ETH IP 初始化模式：改成 BSP_ETH_IP_MODE_DHCP 即启用 DHCP，默认静态 IP。 */
+#define BSP_ETH_IP_MODE                 BSP_ETH_IP_MODE_STATIC
+
+/* 启用 RT-Thread 自带 lwIP 网络协议栈组件。 */
+#define RT_USING_LWIP
+/* 选择 lwIP 2.1.2 版本。 */
+#define RT_USING_LWIP212
+/* lwIP 版本号，RT-Thread port 层用于条件编译。 */
+#define RT_USING_LWIP_VER_NUM          0x20102
+/* lwIP 内存对齐粒度，ETH DMA buffer/cache 以 32 字节 cache line 对齐更稳妥。 */
+#define RT_LWIP_MEM_ALIGNMENT          32
+/* 以太网帧前预留 2 字节，使 14 字节以太网头后的 IP 头按 4 字节对齐，避免 Cortex-A7 unaligned data abort。 */
+#define RT_LWIP_ETH_PAD_SIZE           2
+/* ETH RX DMA 使用 custom pbuf 将 DMA buffer 直接交给 lwIP。 */
+#define LWIP_SUPPORT_CUSTOM_PBUF       1
+/* 启用 ICMP，支持 ping。 */
+#define RT_LWIP_ICMP
+/* 启用 DNS 客户端。 */
+#define RT_LWIP_DNS
+/* 启用 UDP 协议。 */
+#define RT_LWIP_UDP
+/* 启用 TCP 协议。 */
+#define RT_LWIP_TCP
+/* 启用 RAW socket，ping 命令需要。 */
+#define RT_LWIP_RAW
+/* 启用 RT-Thread lwIP ping 命令。 */
+#define RT_LWIP_USING_PING
+
+#if (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_DHCP)
+/* DHCP 模式：网卡初始地址为 0.0.0.0，由 DHCP 客户端获取 IP/网关/掩码。 */
+#define RT_LWIP_DHCP
+#elif (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_STATIC)
+/* 静态 IP 模式：不启用 DHCP，使用下面固定地址。 */
+#undef RT_LWIP_DHCP
+#else
+#error "Invalid BSP_ETH_IP_MODE"
+#endif
+
+/* 静态 IP 地址，固定为 192.168.6.6。 */
+#define RT_LWIP_IPADDR                 "192.168.6.6"
+/* 静态网关地址。 */
+#define RT_LWIP_GWADDR                 "192.168.6.1"
+/* 静态子网掩码。 */
+#define RT_LWIP_MSKADDR                "255.255.255.0"
+/* lwIP pbuf pool 数量。 */
+#define RT_LWIP_PBUF_NUM               16
+/* RAW PCB 数量。 */
+#define RT_LWIP_RAW_PCB_NUM            4
+/* UDP PCB 数量。 */
+#define RT_LWIP_UDP_PCB_NUM            4
+/* TCP PCB 数量。 */
+#define RT_LWIP_TCP_PCB_NUM            4
+/* TCP segment 数量。 */
+#define RT_LWIP_TCP_SEG_NUM            16
+/* TCP 发送缓冲区大小。 */
+#define RT_LWIP_TCP_SND_BUF            4096
+/* TCP 接收窗口大小。 */
+#define RT_LWIP_TCP_WND                4096
+/* lwIP tcpip 线程优先级。 */
+#define RT_LWIP_TCPTHREAD_PRIORITY     12
+/* lwIP tcpip 线程栈大小。 */
+#define RT_LWIP_TCPTHREAD_STACKSIZE    2048
+/* lwIP tcpip 线程邮箱大小。 */
+#define RT_LWIP_TCPTHREAD_MBOX_SIZE    8
+/* RT-Thread ethernetif 收发线程优先级。 */
+#define RT_LWIP_ETHTHREAD_PRIORITY     13
+/* RT-Thread ethernetif 收发线程栈大小。 */
+#define RT_LWIP_ETHTHREAD_STACKSIZE    2048
+/* RT-Thread ethernetif 收发线程邮箱大小。 */
+#define RT_LWIP_ETHTHREAD_MBOX_SIZE    8
 
 /* 启用 RT-Thread 控制台输出。 */
 #define RT_USING_CONSOLE
@@ -374,7 +517,11 @@ Middleware/RT-Thread/components/libc/compilers/common/ctime.c
 - `RT_USING_DEVICE`：打开 RTT device 框架，否则 `list device` 和 `rt_device_register()` 都不可用。
 - `RT_USING_SERIAL`：打开 RTT serial 框架，用于 UART4 shell。
 - `RT_USING_DFS`、`RT_USING_DFS_V1`、`RT_USING_DFS_ELMFAT`：打开 DFS v1 和 FAT 文件系统。
+- `RT_USING_LWIP`、`RT_USING_LWIP212`：打开 RTT 自带 lwIP 2.1.2 组件。
+- `RT_USING_MAILBOX`：lwIP 的 `tcpip_thread`、RTT `ethernetif` 线程会使用邮箱收发消息。
+- `RT_LWIP_ETH_PAD_SIZE 2`：以太网帧前预留 2 字节，让 IP 头 4 字节对齐，避免 A7 data abort。
 - `BSP_USING_FS_AUTO_MOUNT_EMMC` 和 `BSP_USING_FS_AUTO_MOUNT_W25Q` 不能同时打开，因为两者都挂载到根目录 `/`。
+- `BSP_ETH_IP_MODE`：选择 `BSP_ETH_IP_MODE_STATIC` 时使用 `192.168.6.6`，选择 `BSP_ETH_IP_MODE_DHCP` 时启用 DHCP。
 
 ## 5. 创建 board.h
 
@@ -1770,7 +1917,545 @@ HAL_MMC_IRQHandler(&hmmc2);
 
 因此 `stm32mp13xx_it.c` 只需要保证没有定义冲突即可。
 
-## 21. device 和 component 的关系
+## 21. lwIP / ETH1 网络移植
+
+本工程使用 RT-Thread 自带 lwIP 2.1.2，不修改 RTT lwIP 源码本体。板级相关代码只放在 `Drivers/BSP`：
+
+```text
+Drivers/BSP/Inc/bsp_eth.h
+Drivers/BSP/Src/bsp_eth.c
+Drivers/BSP/Inc/bsp_yt8531c.h
+Drivers/BSP/Src/bsp_yt8531c.c
+```
+
+RTT lwIP 负责协议栈、`tcpip_thread`、`ethernetif` 线程和 `ping` 命令；`bsp_eth.c` 只负责 ETH1 HAL、DMA descriptor、PHY、cache、IRQ 和 `struct eth_device` 注册。
+
+### 21.1 ETH 头文件
+
+`Drivers/BSP/Inc/bsp_eth.h` 必须包含 `rtconfig.h`，否则 `bsp_eth.c` / `bsp_yt8531c.c` 里的 `BSP_USING_ETH` 可能不可见，导致 ETH 源码实际没有编译进去：
+
+```c
+#ifndef BSP_ETH_H__
+#define BSP_ETH_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "rtconfig.h"
+#include "main.h"
+
+extern ETH_HandleTypeDef heth1;
+extern ETH_TxPacketConfigTypeDef TxConfig;
+
+int BSP_ETH_Init(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+```
+
+`Drivers/BSP/Src/bsp_yt8531c.c` 同样要包含：
+
+```c
+#include "bsp_yt8531c.h"
+#include "rtconfig.h"
+
+#ifdef BSP_USING_ETH
+```
+
+### 21.2 ETH 全局对象和 RX pbuf pool
+
+`Drivers/BSP/Src/bsp_eth.c` 文件开头：
+
+```c
+#include "bsp_eth.h"
+
+#ifdef BSP_USING_ETH
+
+#include "bsp_yt8531c.h"
+#include "cachel1_armv7.h"
+#include "irq_ctrl.h"
+#include <lwip/memp.h>
+#include <lwip/pbuf.h>
+#include <netif/ethernetif.h>
+#include <stddef.h>
+#include <string.h>
+```
+
+设备名、MAC、buffer：
+
+```c
+#define BSP_ETH_DEVICE_NAME             "e0"
+#define BSP_ETH_MAC_ADDR0               0x00U
+#define BSP_ETH_MAC_ADDR1               0x80U
+#define BSP_ETH_MAC_ADDR2               0xE1U
+#define BSP_ETH_MAC_ADDR3               0x00U
+#define BSP_ETH_MAC_ADDR4               0x00U
+#define BSP_ETH_MAC_ADDR5               0x00U
+
+#define BSP_ETH_TX_BUFFER_SIZE          1536U
+#define BSP_ETH_RX_BUFFER_SIZE          1536U
+#define BSP_ETH_RX_BUFFER_COUNT         12U
+```
+
+RX 使用 lwIP custom pbuf 包装 DMA buffer，所以 `rtconfig.h` 必须定义 `LWIP_SUPPORT_CUSTOM_PBUF 1`：
+
+```c
+typedef struct
+{
+    struct pbuf_custom pbuf_custom;
+    rt_uint8_t buff[(BSP_ETH_RX_BUFFER_SIZE + 31U) & ~31U] __attribute__((aligned(32)));
+} bsp_eth_rx_buff_t;
+
+ETH_HandleTypeDef heth1;
+ETH_TxPacketConfigTypeDef TxConfig;
+
+static ETH_DMADescTypeDef eth_rx_desc[ETH_RX_DESC_CNT] __attribute__((aligned(32)));
+static ETH_DMADescTypeDef eth_tx_desc[ETH_TX_DESC_CNT] __attribute__((aligned(32)));
+static rt_uint8_t eth_tx_buffer[BSP_ETH_TX_BUFFER_SIZE] __attribute__((aligned(32)));
+static struct eth_device eth_device;
+static yt8531c_Object_t yt8531c;
+
+LWIP_MEMPOOL_DECLARE(ETH_RX_POOL,
+                     BSP_ETH_RX_BUFFER_COUNT,
+                     sizeof(bsp_eth_rx_buff_t),
+                     "ETH RX PBUF pool");
+```
+
+### 21.3 cache 维护
+
+Cortex-A7 开启 cache 后，ETH DMA buffer 必须做 cache clean/invalidate。地址按 32 字节 cache line 向下/向上取整：
+
+```c
+#ifdef CACHE_USE
+static void bsp_eth_cache_clean(const void *addr, rt_size_t size)
+{
+    rt_ubase_t start;
+    rt_ubase_t end;
+
+    if ((addr == RT_NULL) || (size == 0U))
+    {
+        return;
+    }
+
+    start = ((rt_ubase_t)addr) & ~(rt_ubase_t)31U;
+    end = (((rt_ubase_t)addr) + size + 31U) & ~(rt_ubase_t)31U;
+    SCB_CleanDCache_by_Addr((void *)start, (int32_t)(end - start));
+}
+
+static void bsp_eth_cache_invalidate(const void *addr, rt_size_t size)
+{
+    rt_ubase_t start;
+    rt_ubase_t end;
+
+    if ((addr == RT_NULL) || (size == 0U))
+    {
+        return;
+    }
+
+    start = ((rt_ubase_t)addr) & ~(rt_ubase_t)31U;
+    end = (((rt_ubase_t)addr) + size + 31U) & ~(rt_ubase_t)31U;
+    SCB_InvalidateDCache_by_Addr((void *)start, (int32_t)(end - start));
+}
+#else
+#define bsp_eth_cache_clean(addr, size)       do { (void)(addr); (void)(size); } while (0)
+#define bsp_eth_cache_invalidate(addr, size)  do { (void)(addr); (void)(size); } while (0)
+#endif
+```
+
+TX 拷贝到 `eth_tx_buffer` 后调用 `bsp_eth_cache_clean()`，RX 回调里在交给 lwIP 前调用 `bsp_eth_cache_invalidate()`。
+
+### 21.4 PHY 初始化和 link 线程
+
+`bsp_eth.c` 通过 HAL MDIO 读写函数注册给 YT8531C 驱动：
+
+```c
+static rt_err_t bsp_eth_phy_init(void)
+{
+    yt8531c_IOCtx_t ioctx;
+
+    memset(&ioctx, 0, sizeof(ioctx));
+    ioctx.Init = bsp_eth_phy_io_init;
+    ioctx.DeInit = bsp_eth_phy_io_deinit;
+    ioctx.ReadReg = bsp_eth_phy_io_read_reg;
+    ioctx.WriteReg = bsp_eth_phy_io_write_reg;
+    ioctx.GetTick = bsp_eth_phy_io_get_tick;
+
+    if (YT8531C_RegisterBusIO(&yt8531c, &ioctx) != YT8531C_STATUS_OK)
+    {
+        return -RT_ERROR;
+    }
+    if (YT8531C_Init(&yt8531c) != YT8531C_STATUS_OK)
+    {
+        return -RT_ERROR;
+    }
+    if (YT8531C_XtalInit() != YT8531C_STATUS_OK)
+    {
+        return -RT_ERROR;
+    }
+    if (YT8531C_ConfigRGMII_Delay(&yt8531c) != YT8531C_STATUS_OK)
+    {
+        return -RT_ERROR;
+    }
+
+    YT8531C_LED_Init();
+
+    if (YT8531C_DisablePowerDownMode(&yt8531c) != YT8531C_STATUS_OK)
+    {
+        return -RT_ERROR;
+    }
+    if (YT8531C_StartAutoNego(&yt8531c) != YT8531C_STATUS_OK)
+    {
+        return -RT_ERROR;
+    }
+
+    return RT_EOK;
+}
+```
+
+link 线程每 1 秒读取 PHY 状态。link up 时根据速率/双工配置 MAC、启动 `HAL_ETH_Start_IT()`，并通知 RTT lwIP：
+
+```c
+static void bsp_eth_update_link(void)
+{
+    int32_t link_state;
+
+    link_state = YT8531C_GetLinkState(&yt8531c);
+    if (bsp_eth_is_valid_link_state(link_state))
+    {
+        if ((eth_started == RT_FALSE) || (eth_applied_link_state != link_state))
+        {
+            (void)HAL_ETH_Stop_IT(&heth1);
+            if (bsp_eth_apply_mac_config(link_state) == HAL_OK)
+            {
+                if (HAL_ETH_Start_IT(&heth1) == HAL_OK)
+                {
+                    eth_started = RT_TRUE;
+                    (void)eth_device_linkchange(&eth_device, RT_TRUE);
+                    rt_kprintf("eth link up: %d\n", link_state);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (eth_started == RT_TRUE)
+        {
+            (void)HAL_ETH_Stop_IT(&heth1);
+            eth_started = RT_FALSE;
+            (void)eth_device_linkchange(&eth_device, RT_FALSE);
+            rt_kprintf("eth link down\n");
+        }
+        eth_applied_link_state = YT8531C_STATUS_LINK_DOWN;
+    }
+}
+```
+
+### 21.5 RTT eth_device 注册
+
+`BSP_ETH_Init()` 完成 HAL ETH 初始化、TX 配置和 PHY 初始化：
+
+```c
+int BSP_ETH_Init(void)
+{
+    memset(&heth1, 0, sizeof(heth1));
+
+    heth1.Instance = ETH;
+    heth1.Init.MACAddr = eth_mac_addr;
+    heth1.Init.MediaInterface = HAL_ETH_RGMII_MODE;
+    heth1.Init.TxDesc = eth_tx_desc;
+    heth1.Init.RxDesc = eth_rx_desc;
+    heth1.Init.RxBuffLen = BSP_ETH_RX_BUFFER_SIZE;
+
+    RCC->MP_AHB6ENSETR = RCC_MP_AHB6ENSETR_ETH1MACEN |
+                         RCC_MP_AHB6ENSETR_ETH1RXEN |
+                         RCC_MP_AHB6ENSETR_ETH1TXEN |
+                         RCC_MP_AHB6ENSETR_ETH1CKEN;
+
+    if (HAL_ETH_Init(&heth1) != HAL_OK)
+    {
+        return -RT_ERROR;
+    }
+
+    memset(&TxConfig, 0, sizeof(TxConfig));
+    TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
+    TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
+    TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
+
+    return (bsp_eth_phy_init() == RT_EOK) ? 0 : -RT_ERROR;
+}
+```
+
+`rt_hw_eth_init()` 注册为 device 初始化阶段：
+
+```c
+static int rt_hw_eth_init(void)
+{
+    rt_err_t result;
+
+    LWIP_MEMPOOL_INIT(ETH_RX_POOL);
+
+    if (BSP_ETH_Init() != 0)
+    {
+        rt_kprintf("eth hardware init failed\n");
+        return -RT_ERROR;
+    }
+
+    memset(&eth_device, 0, sizeof(eth_device));
+#ifdef RT_USING_DEVICE_OPS
+    eth_device.parent.ops = &bsp_eth_ops;
+#else
+    eth_device.parent.init = bsp_eth_dev_init;
+    eth_device.parent.open = bsp_eth_dev_open;
+    eth_device.parent.close = bsp_eth_dev_close;
+    eth_device.parent.read = bsp_eth_dev_read;
+    eth_device.parent.write = bsp_eth_dev_write;
+    eth_device.parent.control = bsp_eth_dev_control;
+#endif
+    eth_device.eth_rx = bsp_eth_rx;
+    eth_device.eth_tx = bsp_eth_tx;
+
+    result = eth_device_init(&eth_device, BSP_ETH_DEVICE_NAME);
+    if (result != RT_EOK)
+    {
+        rt_kprintf("eth device register failed: %d\n", result);
+        return result;
+    }
+
+    eth_link_thread = rt_thread_create("ethlink",
+                                       bsp_eth_link_thread_entry,
+                                       RT_NULL,
+                                       1024,
+                                       RT_LWIP_ETHTHREAD_PRIORITY,
+                                       20);
+    if (eth_link_thread != RT_NULL)
+    {
+        rt_thread_startup(eth_link_thread);
+    }
+
+    return RT_EOK;
+}
+INIT_DEVICE_EXPORT(rt_hw_eth_init);
+```
+
+这里用 `INIT_DEVICE_EXPORT()`，因为它必须在 RTT board 初始化之后、应用层之前注册网卡设备。lwIP 的 `ethernetif` 后续会发现并接管这个 `eth_device`。
+
+### 21.6 ETH IRQ 和 HAL 回调
+
+在 `HAL_ETH_MspInit()` 中注册 GIC handler：
+
+```c
+IRQ_Disable(ETH1_IRQn);
+IRQ_ClearPending(ETH1_IRQn);
+IRQ_SetHandler(ETH1_IRQn, bsp_eth_irq_handler);
+IRQ_SetPriority(ETH1_IRQn, BSP_ETH_IRQ_PRIORITY);
+IRQ_SetMode(ETH1_IRQn, IRQ_MODE_TRIG_LEVEL | IRQ_MODE_TYPE_IRQ | IRQ_MODE_CPU_0);
+IRQ_Enable(ETH1_IRQn);
+```
+
+handler 调 HAL：
+
+```c
+static void bsp_eth_irq_handler(void)
+{
+    HAL_ETH_IRQHandler(&heth1);
+}
+```
+
+RX 完成后只通知 RTT `ethernetif` 线程，不在中断里直接跑协议栈：
+
+```c
+void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
+{
+    RT_UNUSED(heth);
+    (void)eth_device_ready(&eth_device);
+}
+```
+
+### 21.7 RX custom pbuf 和 `ETH_PAD_SIZE=2`
+
+`RT_LWIP_ETH_PAD_SIZE` 在 RTT 的 `Middleware/RT-Thread/components/net/lwip/port/lwipopts.h` 中映射成 lwIP `ETH_PAD_SIZE`：
+
+```c
+#ifdef RT_LWIP_ETH_PAD_SIZE
+#define ETH_PAD_SIZE                RT_LWIP_ETH_PAD_SIZE
+#endif
+```
+
+Cortex-A7 上如果 IP 头不按 4 字节对齐，可能在 lwIP 解析 IP/ICMP/TCP/UDP 头时触发 `data abort exception`。以太网头是 14 字节，所以需要在帧前保留 2 字节 pad。
+
+RX allocate 回调给 HAL 的 buffer 指向 `buffer + ETH_PAD_SIZE`：
+
+```c
+void HAL_ETH_RxAllocateCallback(ETH_HandleTypeDef *heth, uint8_t **buff)
+{
+    struct pbuf_custom *custom_pbuf;
+    rt_uint8_t *buffer;
+
+    RT_UNUSED(heth);
+
+    custom_pbuf = LWIP_MEMPOOL_ALLOC(ETH_RX_POOL);
+    if (custom_pbuf == RT_NULL)
+    {
+        eth_rx_alloc_status = BSP_ETH_RX_ALLOC_ERROR;
+        *buff = RT_NULL;
+        return;
+    }
+
+    buffer = (rt_uint8_t *)custom_pbuf + offsetof(bsp_eth_rx_buff_t, buff);
+    *buff = buffer + ETH_PAD_SIZE;
+
+    custom_pbuf->custom_free_function = bsp_eth_pbuf_free_custom;
+    (void)pbuf_alloced_custom(PBUF_RAW,
+                              0,
+                              PBUF_REF,
+                              custom_pbuf,
+                              buffer,
+                              BSP_ETH_RX_BUFFER_SIZE - ETH_PAD_SIZE);
+}
+```
+
+HAL 收到帧后，把 pbuf 指针从 DMA buffer 反算回来，并把长度加回 pad：
+
+```c
+void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth,
+                            void **p_start,
+                            void **p_end,
+                            uint8_t *buff,
+                            uint16_t length)
+{
+    struct pbuf **pp_start = (struct pbuf **)p_start;
+    struct pbuf **pp_end = (struct pbuf **)p_end;
+    struct pbuf *p;
+
+    RT_UNUSED(heth);
+
+    if ((buff == RT_NULL) || (length == 0U))
+    {
+        return;
+    }
+
+    bsp_eth_cache_invalidate(buff, length);
+
+    p = (struct pbuf *)(buff - ETH_PAD_SIZE - offsetof(bsp_eth_rx_buff_t, buff));
+    p->next = RT_NULL;
+    p->tot_len = length + ETH_PAD_SIZE;
+    p->len = length + ETH_PAD_SIZE;
+
+    if (*pp_start == RT_NULL)
+    {
+        *pp_start = p;
+    }
+    else
+    {
+        (*pp_end)->next = p;
+    }
+
+    *pp_end = p;
+}
+```
+
+lwIP 后续会按 `ETH_PAD_SIZE` 去掉 pad，最终 IP 头落在 4 字节对齐地址。
+
+### 21.8 TX 去掉 pad 再发
+
+lwIP 发出来的 pbuf 前面也带 2 字节 pad，真正送给 ETH MAC 的帧必须从以太网头开始。因此 TX 路径先 `pbuf_remove_header()`，发完再恢复：
+
+```c
+static rt_err_t bsp_eth_tx(rt_device_t dev, struct pbuf *p)
+{
+    struct pbuf *q;
+    rt_uint32_t frame_len = 0;
+    ETH_BufferTypeDef tx_buffer;
+    rt_err_t result = RT_EOK;
+
+    RT_UNUSED(dev);
+
+    if ((p == RT_NULL) || (p->tot_len > BSP_ETH_TX_BUFFER_SIZE) || (eth_started == RT_FALSE))
+    {
+        return -RT_ERROR;
+    }
+
+#if ETH_PAD_SIZE
+    if (pbuf_remove_header(p, ETH_PAD_SIZE) != 0)
+    {
+        return -RT_ERROR;
+    }
+#endif
+
+    if (p->tot_len > BSP_ETH_TX_BUFFER_SIZE)
+    {
+        result = -RT_ERROR;
+        goto __exit;
+    }
+
+    for (q = p; q != RT_NULL; q = q->next)
+    {
+        memcpy(&eth_tx_buffer[frame_len], q->payload, q->len);
+        frame_len += q->len;
+    }
+
+    bsp_eth_cache_clean(eth_tx_buffer, frame_len);
+
+    memset(&tx_buffer, 0, sizeof(tx_buffer));
+    tx_buffer.buffer = eth_tx_buffer;
+    tx_buffer.len = frame_len;
+    tx_buffer.next = RT_NULL;
+
+    TxConfig.Length = frame_len;
+    TxConfig.TxBuffer = &tx_buffer;
+    TxConfig.pData = RT_NULL;
+
+    if (HAL_ETH_Transmit(&heth1, &TxConfig, 100U) != HAL_OK)
+    {
+        result = -RT_ERROR;
+    }
+
+__exit:
+#if ETH_PAD_SIZE
+    (void)pbuf_add_header(p, ETH_PAD_SIZE);
+#endif
+
+    return result;
+}
+```
+
+如果只做 RX pad，不做 TX remove，网卡会把 pad 当成以太网帧前 2 字节内容发出去，抓包会异常。
+
+### 21.9 静态 IP 和 DHCP 切换
+
+`rtconfig.h` 中用 `BSP_ETH_IP_MODE` 选择：
+
+```c
+#define BSP_ETH_IP_MODE_STATIC          0
+#define BSP_ETH_IP_MODE_DHCP            1
+#define BSP_ETH_IP_MODE                 BSP_ETH_IP_MODE_STATIC
+
+#if (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_DHCP)
+#define RT_LWIP_DHCP
+#elif (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_STATIC)
+#undef RT_LWIP_DHCP
+#else
+#error "Invalid BSP_ETH_IP_MODE"
+#endif
+
+#define RT_LWIP_IPADDR                 "192.168.6.6"
+#define RT_LWIP_GWADDR                 "192.168.6.1"
+#define RT_LWIP_MSKADDR                "255.255.255.0"
+```
+
+静态模式下，电脑可以设置同网段地址，例如 `192.168.6.60/255.255.255.0`，然后互相 ping：
+
+```text
+ping 192.168.6.6
+```
+
+板子 ping 电脑时，如果电脑能抓到 request 但没有 reply，通常是 Windows 防火墙禁止入站 ICMPv4。可以先临时关闭防火墙验证，或添加 ICMPv4 Echo Request 入站允许规则。
+
+## 22. device 和 component 的关系
 
 component 是初始化顺序机制，device 是统一设备模型。
 
@@ -1791,7 +2476,16 @@ component 是初始化顺序机制，device 是统一设备模型。
 4. `rt_device_register(&w25q_block_device, "w25q0", ...)` 注册 block device。
 5. DFS/elmfat 只挂载 block device `w25q0`，不直接挂载 MTD device `w25q`。
 
-## 22. 常用 shell 指令
+以 ETH1 为例：
+
+1. `rt_hw_eth_init()` 用 `INIT_DEVICE_EXPORT()` 注册。
+2. 启动时初始化 ETH1 HAL、DMA descriptor、YT8531C PHY。
+3. `eth_device_init(&eth_device, "e0")` 注册 RTT lwIP 网卡设备。
+4. `eth_device.eth_rx = bsp_eth_rx`，`eth_device.eth_tx = bsp_eth_tx` 对接收发函数。
+5. RX 中断只调用 `eth_device_ready()` 唤醒 RTT `ethernetif` 线程。
+6. link 变化时调用 `eth_device_linkchange()` 通知 lwIP netif up/down。
+
+## 23. 常用 shell 指令
 
 查看对象：
 
@@ -1847,7 +2541,20 @@ echo "hello" /hello.txt
 echo "hello" > /hello.txt
 ```
 
-## 23. 文件系统代码中读写文件
+网络：
+
+```text
+list device
+ping 192.168.6.60
+```
+
+当前静态 IP 默认是 `192.168.6.6`。如果电脑设置为 `192.168.6.60/255.255.255.0`，电脑 ping 板子：
+
+```text
+ping 192.168.6.6
+```
+
+## 24. 文件系统代码中读写文件
 
 在应用线程中可以用 DFS POSIX 接口：
 
@@ -1883,7 +2590,7 @@ void fs_demo(void)
 
 也可以直接用 DFS API，例如 `dfs_mount()`、`dfs_unmount()`。
 
-## 24. 构建验证
+## 25. 构建验证
 
 命令行构建：
 
@@ -1922,13 +2629,26 @@ uart4    Character Device
 emmc0    Block Device
 w25q0    Block Device
 w25q     MTD Device
+e0       Network Interface
 ```
 
 实际显示取决于 `BSP_USING_*` 宏和板上器件是否初始化成功。
 
-## 25. 常见问题
+网络验证：
 
-### 25.1 不进 rt_hw_tick_handler
+```text
+ping 192.168.6.60
+```
+
+或者在电脑侧 ping 板子：
+
+```text
+ping 192.168.6.6
+```
+
+## 26. 常见问题
+
+### 26.1 不进 rt_hw_tick_handler
 
 检查：
 
@@ -1945,7 +2665,7 @@ PL1_SetControl(0x1U);
 LDR    PC, =RTThread_IRQ_Handler
 ```
 
-### 25.2 卡在 rt_hw_trap_irq 出不去
+### 26.2 卡在 rt_hw_trap_irq 出不去
 
 通常是 level IRQ pending 但没有 handler 清中断源。典型例子是 SDMMC2：
 
@@ -1961,7 +2681,7 @@ HAL_MMC_IRQHandler(&hmmc2);
 
 否则 GIC end interrupt 后外设中断源仍然 pending，会立刻再次进入。
 
-### 25.3 重启后文件丢失
+### 26.3 重启后文件丢失
 
 常见原因：
 
@@ -1972,7 +2692,7 @@ HAL_MMC_IRQHandler(&hmmc2);
 
 写文件后至少确保 `close(fd)`，shell 命令写完通常会 close。
 
-### 25.4 W25Q df 只有 15.9 MB
+### 26.4 W25Q df 只有 15.9 MB
 
 W25Q128 物理容量是 16 MiB：
 
@@ -1988,7 +2708,63 @@ W25Q128 物理容量是 16 MiB：
 
 FAT 格式化后，文件系统元数据占用一部分空间，所以 `df` 显示可用空间小于 16 MiB。
 
-### 25.5 固件区是否纳入文件系统
+### 26.5 ETH 收包 data abort
+
+现象类似：
+
+```text
+data abort exception
+fault pc: 0xc000c26e, exception lr/pc: 0xc000c276
+```
+
+如果异常发生在 lwIP 处理 ICMP/IP 包附近，优先检查 `ETH_PAD_SIZE`。以太网头是 14 字节，不加 pad 时 IP 头不是 4 字节对齐，Cortex-A7 上可能触发非对齐访问异常。
+
+当前修复点：
+
+```c
+#define RT_LWIP_ETH_PAD_SIZE           2
+#define LWIP_SUPPORT_CUSTOM_PBUF       1
+```
+
+RX：
+
+```c
+*buff = buffer + ETH_PAD_SIZE;
+p->tot_len = length + ETH_PAD_SIZE;
+p->len = length + ETH_PAD_SIZE;
+```
+
+TX：
+
+```c
+pbuf_remove_header(p, ETH_PAD_SIZE);
+/* copy payload to DMA TX buffer and transmit */
+pbuf_add_header(p, ETH_PAD_SIZE);
+```
+
+### 26.6 电脑 ping 板子通，板子 ping 电脑不通
+
+如果抓包能看到：
+
+```text
+192.168.6.6 -> 192.168.6.60 ICMP Echo request
+```
+
+但没有：
+
+```text
+192.168.6.60 -> 192.168.6.6 ICMP Echo reply
+```
+
+说明板子 TX 已经正常，电脑收到了板子的 ICMP request。常见原因是 Windows 防火墙禁止入站 ICMPv4 Echo Request。电脑主动 ping 板子能通，不代表电脑允许被 ping。
+
+可用管理员 PowerShell 添加规则：
+
+```powershell
+netsh advfirewall firewall add rule name="Allow ICMPv4 Echo Request" protocol=icmpv4:8,any dir=in action=allow
+```
+
+### 26.7 固件区是否纳入文件系统
 
 不建议纳入。推荐布局：
 
@@ -2013,17 +2789,21 @@ static rt_ssize_t emmcfs_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_si
 
 然后只对新设备 `emmcfs0` 执行 `mkfs`。
 
-## 26. 移植完成检查表
+## 27. 移植完成检查表
 
 1. `rtconfig.h` 宏和当前目标一致。
-2. IAR include path 包含 RTT include、drivers include、finsh、dfs_v1、elmfat、libc common。
-3. IAR 工程加入所有 RTT kernel、device、finsh、dfs 源文件。
+2. IAR include path 包含 RTT include、drivers include、finsh、dfs_v1、elmfat、libc common、lwIP port、lwIP include。
+3. IAR 工程加入所有 RTT kernel、device、finsh、dfs、lwIP 源文件。
 4. 启动文件向量表从 FreeRTOS IRQ/SWI 改为 RTT handler。
 5. `rtthread_port_iar.s` 中实现上下文切换、IRQ、异常入口。
 6. `rtthread_board.c` 中初始化 heap、component board、PL1 tick。
 7. UART4 注册为 RTT serial device，RX 中断调用 `rt_hw_serial_isr()`。
 8. eMMC/W25Q 初始化函数通过 `INIT_BOARD_EXPORT()` 注册。
 9. 文件系统自动挂载通过 `INIT_APP_EXPORT()` 注册。
-10. `list device` 能看到目标设备。
-11. `mkfs`、`mount`、`echo`、`cat`、`df` 能正常运行。
-12. eMMC 如有固件区，禁止直接 `mkfs emmc0`，先做分区偏移设备。
+10. ETH1 通过 `INIT_DEVICE_EXPORT()` 注册为 RTT lwIP 网卡设备 `e0`。
+11. ETH RX/TX buffer 做 32 字节对齐，cache 模式下 TX clean、RX invalidate。
+12. `RT_LWIP_ETH_PAD_SIZE` 为 `2`，RX/TX 都正确处理 pad。
+13. `list device` 能看到目标设备。
+14. `mkfs`、`mount`、`echo`、`cat`、`df` 能正常运行。
+15. `ping 192.168.6.60` 或电脑 ping `192.168.6.6` 能正常收发。
+16. eMMC 如有固件区，禁止直接 `mkfs emmc0`，先做分区偏移设备。

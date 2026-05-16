@@ -18,6 +18,9 @@
 #ifndef ENXIO
 #define ENXIO           6
 #endif
+#ifndef EAGAIN
+#define EAGAIN          11
+#endif
 #ifndef EBADF
 #define EBADF           9
 #endif
@@ -60,14 +63,56 @@
 #ifndef ENOSYS
 #define ENOSYS          38
 #endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK     EAGAIN
+#endif
 #ifndef ENODATA
 #define ENODATA         61
+#endif
+#ifndef ENFILE
+#define ENFILE          23
+#endif
+#ifndef EMSGSIZE
+#define EMSGSIZE        90
+#endif
+#ifndef ENOPROTOOPT
+#define ENOPROTOOPT     92
+#endif
+#ifndef EOPNOTSUPP
+#define EOPNOTSUPP      95
+#endif
+#ifndef EAFNOSUPPORT
+#define EAFNOSUPPORT    97
+#endif
+#ifndef EADDRINUSE
+#define EADDRINUSE      98
+#endif
+#ifndef ECONNABORTED
+#define ECONNABORTED    103
+#endif
+#ifndef ECONNRESET
+#define ECONNRESET      104
+#endif
+#ifndef ENOBUFS
+#define ENOBUFS         105
+#endif
+#ifndef EISCONN
+#define EISCONN         106
+#endif
+#ifndef ENOTCONN
+#define ENOTCONN        107
 #endif
 #ifndef ETIMEDOUT
 #define ETIMEDOUT       110
 #endif
-#ifndef ENOBUFS
-#define ENOBUFS         105
+#ifndef EHOSTUNREACH
+#define EHOSTUNREACH    113
+#endif
+#ifndef EALREADY
+#define EALREADY        114
+#endif
+#ifndef EINPROGRESS
+#define EINPROGRESS     115
 #endif
 
 #endif
