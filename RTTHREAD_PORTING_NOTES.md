@@ -43,6 +43,7 @@
 - `RT_LWIP_TCP`
 - `RT_LWIP_RAW`
 - `RT_LWIP_USING_PING`
+- `RT_LWIP_USING_IPERF`
 - `RT_LWIP_ETH_PAD_SIZE 2`
 - `LWIP_SUPPORT_CUSTOM_PBUF 1`
 - `BSP_USING_ETH`
@@ -159,6 +160,22 @@ list device
 - `RT_LWIP_ETH_PAD_SIZE` 固定为 `2`，RX DMA buffer 返回给 HAL 时跳过 2 字节；lwIP 解析时会去掉该 pad，使 14 字节以太网头后的 IP 头按 4 字节对齐，避免 Cortex-A7 非对齐访问触发 data abort。
 - TX 路径在拷贝发送帧前调用 `pbuf_remove_header(p, ETH_PAD_SIZE)` 去掉 lwIP 预留 pad，发送完成后用 `pbuf_add_header(p, ETH_PAD_SIZE)` 恢复 pbuf 头部。
 - RX 使用 `pbuf_alloced_custom()` 直接包装 DMA buffer，因此 `LWIP_SUPPORT_CUSTOM_PBUF` 必须开启。
+- `User/Core/Src/rtthread_iperf_port.c` 将 lwIP 自带 `lwiperf` 封装成 MSH 命令 `iperf`；由于 `lwiperf` 使用 raw TCP API，启动/停止操作通过 `tcpip_callback()` 投递到 lwIP `tcpip_thread` 执行。
+
+iperf 用法：
+
+```text
+iperf -s [port]
+iperf -c <ip> [port]
+iperf stop
+```
+
+电脑端使用 iperf2，不使用 iperf3。例如：
+
+```text
+iperf -c 192.168.6.6 -p 5001
+iperf -s -p 5001
+```
 
 ## 文件系统移植
 

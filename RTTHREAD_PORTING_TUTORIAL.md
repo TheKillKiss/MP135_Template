@@ -17,6 +17,7 @@
   - `w25q`：W25Q128 MTD NOR device
   - `w25q0`：W25Q128 512 字节逻辑 block device，用于 FAT/DFS
 - 网络：RT-Thread 自带 lwIP 2.1.2，ETH1 + YT8531C，网卡设备 `e0`
+- 网络测试：lwIP 自带 `lwiperf` 封装为 MSH 命令 `iperf`，兼容 iperf2 TCP 测试
 
 ## 1. 分支修改记录
 
@@ -42,6 +43,7 @@ User/Core/Src/rtthread_board.c
 User/Core/Src/rtthread_port_iar.s
 User/Core/Src/rtthread_shell_port.c
 User/Core/Src/rtthread_filesystem_port.c
+User/Core/Src/rtthread_iperf_port.c
 User/Core/Src/rtthread_trap.c
 User/Core/Src/stm32mp13xx_it.c
 Drivers/BSP/Inc/bsp_spi.h
@@ -178,6 +180,7 @@ User/Core/Src/rtthread_board.c
 User/Core/Src/rtthread_port_iar.s
 User/Core/Src/rtthread_shell_port.c
 User/Core/Src/rtthread_filesystem_port.c
+User/Core/Src/rtthread_iperf_port.c
 User/Core/Src/rtthread_trap.c
 ```
 
@@ -295,6 +298,7 @@ Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/api/tcpip.c
 Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/netif/ethernet.c
 Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/netif/lowpan6.c
 Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/apps/ping/ping.c
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/apps/lwiperf/lwiperf.c
 ```
 
 ## 4. 创建 rtconfig.h
@@ -429,6 +433,8 @@ Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/apps/ping/ping.c
 #define RT_LWIP_RAW
 /* 启用 RT-Thread lwIP ping 命令。 */
 #define RT_LWIP_USING_PING
+/* 启用 lwIP 自带 lwiperf，并导出 iperf MSH 测速命令。 */
+#define RT_LWIP_USING_IPERF
 
 #if (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_DHCP)
 /* DHCP 模式：网卡初始地址为 0.0.0.0，由 DHCP 客户端获取 IP/网关/掩码。 */
@@ -520,6 +526,7 @@ Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/apps/ping/ping.c
 - `RT_USING_LWIP`、`RT_USING_LWIP212`：打开 RTT 自带 lwIP 2.1.2 组件。
 - `RT_USING_MAILBOX`：lwIP 的 `tcpip_thread`、RTT `ethernetif` 线程会使用邮箱收发消息。
 - `RT_LWIP_ETH_PAD_SIZE 2`：以太网帧前预留 2 字节，让 IP 头 4 字节对齐，避免 A7 data abort。
+- `RT_LWIP_USING_IPERF`：打开用户侧 `iperf` MSH 命令封装，底层使用 lwIP 自带 `lwiperf`。
 - `BSP_USING_FS_AUTO_MOUNT_EMMC` 和 `BSP_USING_FS_AUTO_MOUNT_W25Q` 不能同时打开，因为两者都挂载到根目录 `/`。
 - `BSP_ETH_IP_MODE`：选择 `BSP_ETH_IP_MODE_STATIC` 时使用 `192.168.6.6`，选择 `BSP_ETH_IP_MODE_DHCP` 时启用 DHCP。
 
@@ -2455,6 +2462,54 @@ ping 192.168.6.6
 
 板子 ping 电脑时，如果电脑能抓到 request 但没有 reply，通常是 Windows 防火墙禁止入站 ICMPv4。可以先临时关闭防火墙验证，或添加 ICMPv4 Echo Request 入站允许规则。
 
+### 21.10 iperf 测速命令
+
+lwIP 2.1.2 自带 `lwiperf`，源码为：
+
+```text
+Middleware/RT-Thread/components/net/lwip/lwip-2.1.2/src/apps/lwiperf/lwiperf.c
+```
+
+当前工程新增 `User/Core/Src/rtthread_iperf_port.c`，导出 MSH 命令 `iperf`。`lwiperf` 使用 raw TCP API，所以 shell 命令不直接调用 `lwiperf_start_*()`，而是通过 `tcpip_callback()` 投递到 lwIP `tcpip_thread` 中执行：
+
+```c
+err = tcpip_callback(callback, ctx);
+```
+
+支持命令：
+
+```text
+iperf -s [port]
+iperf -c <ip> [port]
+iperf stop
+```
+
+板子作为 server：
+
+```text
+msh />iperf -s
+```
+
+电脑端使用 iperf2 连接板子：
+
+```powershell
+iperf -c 192.168.6.6 -p 5001
+```
+
+板子作为 client：
+
+```text
+msh />iperf -c 192.168.6.60
+```
+
+电脑端先启动 iperf2 server：
+
+```powershell
+iperf -s -p 5001
+```
+
+注意：这里兼容的是 iperf2 协议，不是 iperf3。电脑端不要用 `iperf3`。
+
 ## 22. device 和 component 的关系
 
 component 是初始化顺序机制，device 是统一设备模型。
@@ -2546,6 +2601,9 @@ echo "hello" > /hello.txt
 ```text
 list device
 ping 192.168.6.60
+iperf -s
+iperf -c 192.168.6.60
+iperf stop
 ```
 
 当前静态 IP 默认是 `192.168.6.6`。如果电脑设置为 `192.168.6.60/255.255.255.0`，电脑 ping 板子：
@@ -2803,7 +2861,9 @@ static rt_ssize_t emmcfs_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_si
 10. ETH1 通过 `INIT_DEVICE_EXPORT()` 注册为 RTT lwIP 网卡设备 `e0`。
 11. ETH RX/TX buffer 做 32 字节对齐，cache 模式下 TX clean、RX invalidate。
 12. `RT_LWIP_ETH_PAD_SIZE` 为 `2`，RX/TX 都正确处理 pad。
-13. `list device` 能看到目标设备。
-14. `mkfs`、`mount`、`echo`、`cat`、`df` 能正常运行。
-15. `ping 192.168.6.60` 或电脑 ping `192.168.6.6` 能正常收发。
-16. eMMC 如有固件区，禁止直接 `mkfs emmc0`，先做分区偏移设备。
+13. `iperf` MSH 命令使用 `tcpip_callback()` 在 lwIP `tcpip_thread` 中启动/停止 `lwiperf`。
+14. `list device` 能看到目标设备。
+15. `mkfs`、`mount`、`echo`、`cat`、`df` 能正常运行。
+16. `ping 192.168.6.60` 或电脑 ping `192.168.6.6` 能正常收发。
+17. `iperf -s` 和 `iperf -c 192.168.6.60` 能配合电脑 iperf2 测试 TCP 吞吐。
+18. eMMC 如有固件区，禁止直接 `mkfs emmc0`，先做分区偏移设备。

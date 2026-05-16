@@ -125,6 +125,8 @@
 #define RT_LWIP_RAW
 /* 启用 RT-Thread lwIP ping 命令。 */
 #define RT_LWIP_USING_PING
+/* 启用 lwIP 自带 lwiperf，并导出 iperf MSH 测速命令。 */
+#define RT_LWIP_USING_IPERF
 
 #if (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_DHCP)
 /* DHCP 模式：网卡初始地址为 0.0.0.0，由 DHCP 客户端获取 IP/网关/掩码。 */
