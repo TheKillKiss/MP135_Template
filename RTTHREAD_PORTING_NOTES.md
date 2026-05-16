@@ -43,7 +43,6 @@ Reset_Handler
   -> __cmain
   -> components.c::__low_level_init()
   -> __iar_data_init3()
-  -> startup_stm32mp135dxx_ca7_rtos.s::__iar_data_init_done()
   -> SystemInit()
   -> components.c::rtthread_startup()
   -> rt_hw_board_init()

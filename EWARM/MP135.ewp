@@ -82,7 +82,7 @@
                 </option>
                 <option>
                     <name>GEndianModeBE</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>OGBufferedTerminalOutput</name>
@@ -99,7 +99,7 @@
                 <option>
                     <name>GBECoreSlave</name>
                     <version>35</version>
-                    <state>38</state>
+                    <state>54</state>
                 </option>
                 <option>
                     <name>OGUseCmsis</name>
@@ -234,6 +234,7 @@
                     <state>USE_HAL_DRIVER</state>
                     <state>STM32MP135Dxx</state>
                     <state>CORE_CA7</state>
+                    <state>CACHE_USE</state>
                     <state>NO_MMU_USE</state>
                     <state>DDR_TYPE_DDR3_4Gb</state>
                     <state>__RT_KERNEL_SOURCE__</state>
@@ -2296,13 +2297,13 @@
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_board.c</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_filesystem_port.c</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_port_iar.s</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_shell_port.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\User\Core\Src\rtthread_filesystem_port.c</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\User\Core\Src\rtthread_trap.c</name>
@@ -2321,6 +2322,9 @@
         <group>
             <name>BSP</name>
             <file>
+                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_emmc.c</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_led.c</name>
             </file>
             <file>
@@ -2328,9 +2332,6 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_w25q128.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Drivers\BSP\Src\bsp_emmc.c</name>
             </file>
         </group>
         <group>
@@ -2369,9 +2370,6 @@
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_mmc_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_spi.c</name>
-            </file>
-            <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_pwr.c</name>
             </file>
             <file>
@@ -2382,6 +2380,9 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_rcc_ex.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_spi.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Drivers\STM32MP13xx_HAL_Driver\Src\stm32mp13xx_hal_uart.c</name>
@@ -2417,27 +2418,12 @@
                 </file>
             </group>
             <group>
-                <name>FinSH</name>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\cmd.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_parse.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\shell.c</name>
-                </file>
-                <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_file.c</name>
-                </file>
-            </group>
-            <group>
                 <name>DFS</name>
                 <file>
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\dfs_elm.c</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs_file.c</name>
@@ -2449,13 +2435,28 @@
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\src\dfs_posix.c</name>
                 </file>
                 <file>
-                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\dfs_elm.c</name>
-                </file>
-                <file>
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\ff.c</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\dfs\dfs_v1\filesystems\elmfat\ffunicode.c</name>
+                </file>
+            </group>
+            <group>
+                <name>FinSH</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\cmd.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_file.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\msh_parse.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Middleware\RT-Thread\components\finsh\shell.c</name>
                 </file>
             </group>
             <group>

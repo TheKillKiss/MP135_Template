@@ -1249,13 +1249,9 @@ Default_Handler:
   ARM
 
 __iar_data_init_done:
-  PUSH   {R7, LR}
-  /* *** Do not use/rely on initialized (or zero initialized) global variables in SystemInit() */
-  /* *** since their initilzation will be invoked within __cmain */
-  BLX    SystemInit
-  /* Unmask interrupts */
-  CPSIE  if
-  POP    {R7, PC}
+  /* SystemInit is called explicitly from components.c::__low_level_init()
+     after __iar_data_init3(), so this IAR data-init hook is intentionally empty. */
+  BX     LR
 
   /*PUBLIC ZeroBss
   EXTERN ZI_DATA
