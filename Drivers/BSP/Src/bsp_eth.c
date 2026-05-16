@@ -12,7 +12,7 @@
 #include <string.h>
 
 #ifndef BSP_ETH_IRQ_PRIORITY
-#define BSP_ETH_IRQ_PRIORITY            (0xA0U)
+#define BSP_ETH_IRQ_PRIORITY            (5U)
 #endif
 
 #define BSP_ETH_DEVICE_NAME             "e0"
@@ -25,7 +25,7 @@
 
 #define BSP_ETH_TX_BUFFER_SIZE          1536U
 #define BSP_ETH_RX_BUFFER_SIZE          1536U
-#define BSP_ETH_RX_BUFFER_COUNT         12U
+#define BSP_ETH_RX_BUFFER_COUNT         64U
 
 typedef struct
 {
