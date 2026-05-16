@@ -12,6 +12,8 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
+#define LWIP_NOASSERT               1
+
 #include <rtconfig.h>
 
 /* ---------- LIBC and standard header files ---------- */
@@ -276,7 +278,7 @@
 #define MEM_ALIGNMENT               4
 #endif
 
-#define MEMP_OVERFLOW_CHECK         1
+#define MEMP_OVERFLOW_CHECK         0
 #define LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT 1
 
 //#define MEM_LIBC_MALLOC             1
@@ -330,8 +332,8 @@
 /* MEMP_NUM_TCPIP_MSG_*: the number of struct tcpip_msg, which is used
    for sequential API communication and incoming packets. Used in
    src/api/tcpip.c. */
-// #define MEMP_NUM_TCPIP_MSG_API      16
-// #define MEMP_NUM_TCPIP_MSG_INPKT    16
+#define MEMP_NUM_TCPIP_MSG_API      16
+#define MEMP_NUM_TCPIP_MSG_INPKT    32
 
 /* ---------- Pbuf options ---------- */
 /* PBUF_POOL_SIZE: the number of buffers in the pbuf pool. */

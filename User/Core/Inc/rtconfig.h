@@ -127,6 +127,8 @@
 #define RT_LWIP_USING_PING
 /* 启用 lwIP 自带 lwiperf，并导出 iperf MSH 测速命令。 */
 #define RT_LWIP_USING_IPERF
+#define RT_LWIP_USING_HW_CHECKSUM
+#define LWIP_NO_TX_THREAD
 
 #if (BSP_ETH_IP_MODE == BSP_ETH_IP_MODE_DHCP)
 /* DHCP 模式：网卡初始地址为 0.0.0.0，由 DHCP 客户端获取 IP/网关/掩码。 */
@@ -145,7 +147,7 @@
 /* 静态子网掩码。 */
 #define RT_LWIP_MSKADDR                "255.255.255.0"
 /* lwIP pbuf pool 数量。 */
-#define RT_LWIP_PBUF_NUM               16
+#define RT_LWIP_PBUF_NUM               32
 /* RAW PCB 数量。 */
 #define RT_LWIP_RAW_PCB_NUM            4
 /* UDP PCB 数量。 */
@@ -153,23 +155,23 @@
 /* TCP PCB 数量。 */
 #define RT_LWIP_TCP_PCB_NUM            4
 /* TCP segment 数量。 */
-#define RT_LWIP_TCP_SEG_NUM            16
+#define RT_LWIP_TCP_SEG_NUM            32
 /* TCP 发送缓冲区大小。 */
-#define RT_LWIP_TCP_SND_BUF            4096
+#define RT_LWIP_TCP_SND_BUF            (8 * 1460)
 /* TCP 接收窗口大小。 */
-#define RT_LWIP_TCP_WND                4096
+#define RT_LWIP_TCP_WND                (4 * 1460)
 /* lwIP tcpip 线程优先级。 */
 #define RT_LWIP_TCPTHREAD_PRIORITY     12
 /* lwIP tcpip 线程栈大小。 */
 #define RT_LWIP_TCPTHREAD_STACKSIZE    2048
 /* lwIP tcpip 线程邮箱大小。 */
-#define RT_LWIP_TCPTHREAD_MBOX_SIZE    8
+#define RT_LWIP_TCPTHREAD_MBOX_SIZE    32
 /* RT-Thread ethernetif 收发线程优先级。 */
 #define RT_LWIP_ETHTHREAD_PRIORITY     13
 /* RT-Thread ethernetif 收发线程栈大小。 */
 #define RT_LWIP_ETHTHREAD_STACKSIZE    2048
 /* RT-Thread ethernetif 收发线程邮箱大小。 */
-#define RT_LWIP_ETHTHREAD_MBOX_SIZE    8
+#define RT_LWIP_ETHTHREAD_MBOX_SIZE    32
 
 /* 启用 RT-Thread 控制台输出。 */
 #define RT_USING_CONSOLE
