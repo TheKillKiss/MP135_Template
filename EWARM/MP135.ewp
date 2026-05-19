@@ -235,7 +235,7 @@
                     <state>STM32MP135Dxx</state>
                     <state>CORE_CA7</state>
                     <state>CACHE_USE</state>
-                    <state>NO_MMU_USE</state>
+                    <state>MMU_USE</state>
                     <state>DDR_TYPE_DDR3_4Gb</state>
                 </option>
                 <option>

@@ -106,6 +106,9 @@
 #define TTB_L1_SIZE                     0x4000
 #define TTB_L2_1M_SIZE                  0x0400
 
+#define ETH_NOCACHE_BASE  0xDF200000U
+#define ETH_NOCACHE_SIZE_MB  1U
+
 #define PAGE_1MB_SIZE (1 << 20)
 #define PAGE_1MB_MASK (PAGE_1MB_SIZE - 1)
 #define PAGE_1MB_ALIGN_MASK (~PAGE_1MB_MASK)
@@ -134,6 +137,7 @@ static uint32_t Sect_Normal_Shared;     // outer & inner wb/wa, shareable, execu
 static uint32_t Sect_Device_RO;         // device, non-shareable, non-executable, ro, domain 0, base addr 0
 static uint32_t Sect_Device_RW;         // as Sect_Device_RO, but writeable
 static uint32_t Sect_Device_RW_Shared;  // as Sect_Device_RO, but writeable, shareable
+static uint32_t Sect_Normal_NoneCacheable;
 
 static uint32_t Page_L1_4k  = 0x0;                  // generic
 static uint32_t Page_4k_Normal_Cod;                 // outer & inner wb/wa        , shareable, executable,     ro, domain 0
@@ -179,6 +183,7 @@ void MMU_CreateTranslationTable(void)
   // Create descriptors for Vectors, RO, RW, ZI sections
   section_so(Sect_SO, region);
   section_normal(Sect_Normal, region);
+  section_normal_nc(Sect_Normal_NoneCacheable, region);
 
   Sect_Normal_Shared = Sect_Normal;
   MMU_SharedSection(&Sect_Normal_Shared, SHARED);
@@ -253,7 +258,8 @@ void MMU_CreateTranslationTable(void)
 
   // All DDR (1GB) Executable, Cacheable & RW - applications may choose to divide memory into RO executable
   MMU_TTSection (ttb_addr, (uint32_t)DRAM_MEM_BASE      , 1024U                                        , Sect_Normal_Shared);
-
+  
+  MMU_TTSection(ttb_addr, ETH_NOCACHE_BASE, ETH_NOCACHE_SIZE_MB, Sect_Normal_NoneCacheable);
   //-------------------- SYSRAM ------------------
   // Create (256 * 4k)=1MB faulting entries to cover SYSRAM 1M aligned range
   MMU_TTPage4k (ttb_addr, SYSRAM_BASE & PAGE_1MB_ALIGN_MASK, 1024U/4U, Page_L1_4k, (uint32_t *)sysram_table_l2_base_4k, DESCRIPTOR_FAULT);

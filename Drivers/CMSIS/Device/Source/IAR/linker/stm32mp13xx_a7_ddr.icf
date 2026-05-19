@@ -13,7 +13,9 @@ define symbol __ICFEDIT_region_SRAM2_BASE_end__        = 0x30005FFF;
 define symbol __ICFEDIT_region_SRAM3_BASE_start__      = 0x30006000;
 define symbol __ICFEDIT_region_SRAM3_BASE_end__        = 0x30007FFF;
 define symbol __ICFEDIT_region_DDR1_BASE_start__        = 0xC0000000;
-define symbol __ICFEDIT_region_DDR1_BASE_end__          = 0xDF37AFFF;
+define symbol __ICFEDIT_region_DDR1_BASE_end__          = 0xDF1FFFFF;
+define symbol __ICFEDIT_region_ETH_NOCACHE_start__    = 0xDF200000;
+define symbol __ICFEDIT_region_ETH_NOCACHE_end__      = 0xDF2FFFFF;
 define symbol __ICFEDIT_region_DDR2_BASE_start__        = 0xDF37B000;
 define symbol __ICFEDIT_region_DDR2_BASE_end__          = 0xDF3F7FFF;
 /* DDR3 start address should be 16K aligned as TTB block needs 16K alignment.*/
@@ -85,6 +87,7 @@ else
 if (use_DDR1)
 {
   define region DDR1_region = mem:[from __ICFEDIT_region_DDR1_BASE_start__ to __ICFEDIT_region_DDR1_BASE_end__];
+  define region ETH_NOCACHE_region = mem:[from __ICFEDIT_region_ETH_NOCACHE_start__ to __ICFEDIT_region_ETH_NOCACHE_end__];
 }
 else
 {
@@ -121,6 +124,7 @@ if (!isempty(DDR1_region))
   define block RO_CODE { ro code };
   define block RO_DATA with alignment = 4K { ro data };
   place in DDR1_region  { first block RO_CODE, block RO_DATA };
+  place in ETH_NOCACHE_region { section ETH_NOCACHE };
 }
 
 if (!isempty(DDR2_region))

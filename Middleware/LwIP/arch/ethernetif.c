@@ -73,6 +73,8 @@
 #define ETH_RX_BUFFER_SIZE    1536U
 #define ETH_RX_BUFFER_COUNT   100U
 
+#pragma location="ETH_NOCACHE"
+#pragma data_alignment=32
 static uint8_t eth_tx_buffer[ETH_TX_BUFFER_SIZE];
 
 typedef enum {
@@ -85,6 +87,8 @@ typedef struct {
   uint8_t buff[(ETH_RX_BUFFER_SIZE + 31U) & ~31U] __ALIGNED(32);
 } RxBuff_t;
 
+#pragma location="ETH_NOCACHE"
+#pragma data_alignment=32
 LWIP_MEMPOOL_DECLARE(RX_POOL,
                      ETH_RX_BUFFER_COUNT,
                      sizeof(RxBuff_t),

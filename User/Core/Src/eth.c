@@ -23,12 +23,12 @@
 
 #if defined ( __ICCARM__ ) /*!< IAR Compiler */
 
-//#pragma location=0x30000000
-__attribute__((aligned(32)))
+#pragma location="ETH_NOCACHE"
+#pragma data_alignment=32
 ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
 
-//#pragma location=0x30000100
-__attribute__((aligned(32)))
+#pragma location="ETH_NOCACHE"
+#pragma data_alignment=32
 ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
 #elif defined ( __CC_ARM )  /* MDK ARM Compiler */
