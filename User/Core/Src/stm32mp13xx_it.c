@@ -197,6 +197,11 @@ void ETH1_IRQHandler(void)
     HAL_ETH_IRQHandler(&heth1);
 }
 
+void EXTI14_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
+}
+
 /******************************************************************************/
 /* STM32MP1xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */

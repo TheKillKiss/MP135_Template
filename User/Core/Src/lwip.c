@@ -5,12 +5,9 @@
 #include "lwip/apps/lwiperf.h"
 #include "os.h"
 
-#define ETHIF_TASK_PRIO        6u
-#define ETHIF_TASK_STK_SIZE    1024u
-
 static OS_TCB  EthIfTaskTCB;
 static CPU_STK EthIfTaskStk[ETHIF_TASK_STK_SIZE];
-static OS_SEM  EthRxSem;
+static OS_FLAG_GRP EthIfFlags;
 static void   *IperfSession;
 
 struct netif gnetif;
@@ -33,7 +30,7 @@ void LwIP_Init(void)
     ip_addr_t netmask;
     ip_addr_t gw;
 
-    OSSemCreate(&EthRxSem, "Eth Rx Sem", 0u, &err);
+    OSFlagCreate(&EthIfFlags, "Eth If Flags", 0u, &err);
     if (err != OS_ERR_NONE) {
         Error_Handler();
     }
@@ -95,18 +92,26 @@ static void EthIfTask(void *p_arg)
 {
     OS_ERR err;
     CPU_TS ts;
+    OS_FLAGS flags;
 
     (void)p_arg;
 
     while (1) {
-        OSSemPend(&EthRxSem,
-                  500u,
-                  OS_OPT_PEND_BLOCKING,
-                  &ts,
-                  &err);
+        flags = OSFlagPend(&EthIfFlags,
+                           ETHIF_FLAG_ALL,
+                           500u,
+                           OS_OPT_PEND_FLAG_SET_ANY |
+                           OS_OPT_PEND_FLAG_CONSUME |
+                           OS_OPT_PEND_BLOCKING,
+                           &ts,
+                           &err);
 
         if (err == OS_ERR_NONE) {
-            if (netif_is_link_up(&gnetif)) {
+            if ((flags & ETHIF_FLAG_LINK) != 0u) {
+                ethernetif_update_link(&gnetif);
+            }
+
+            if (((flags & ETHIF_FLAG_RX) != 0u) && netif_is_link_up(&gnetif)) {
                 ethernetif_input(&gnetif);
             }
         } else if (err == OS_ERR_TIMEOUT) {
@@ -126,9 +131,20 @@ void ethernetif_notify_rx(void)
 {
     OS_ERR err;
 
-    OSSemPost(&EthRxSem,
-              OS_OPT_POST_1,
-              &err);
+    OSFlagPost(&EthIfFlags,
+               ETHIF_FLAG_RX,
+               OS_OPT_POST_FLAG_SET,
+               &err);
+}
+
+void ethernetif_notify_link(void)
+{
+    OS_ERR err;
+
+    OSFlagPost(&EthIfFlags,
+               ETHIF_FLAG_LINK,
+               OS_OPT_POST_FLAG_SET,
+               &err);
 }
 
 static void IperfReport(void *arg,

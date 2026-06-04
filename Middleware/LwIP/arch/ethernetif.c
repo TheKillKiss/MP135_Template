@@ -72,6 +72,10 @@
 #define ETH_TX_BUFFER_SIZE    1536U
 #define ETH_RX_BUFFER_SIZE    1536U
 #define ETH_RX_BUFFER_COUNT   100U
+#define YT8531C_LINK_IT_MASK  (YT8531C_INT_LINK_SUCCEED | \
+                               YT8531C_INT_LINK_FAILED | \
+                               YT8531C_INT_SPEED_CHANGED | \
+                               YT8531C_INT_DUPLEX_CHANGED)
 
 #pragma location="ETH_NOCACHE"
 #pragma data_alignment=32
@@ -162,6 +166,10 @@ static err_t ethernetif_phy_init(void)
     }
 
     if (YT8531C_Init(&YT8531C) != YT8531C_STATUS_OK) {
+        return ERR_IF;
+    }
+
+    if (YT8531C_EnableIT(&YT8531C, YT8531C_LINK_IT_MASK) != YT8531C_STATUS_OK) {
         return ERR_IF;
     }
 
@@ -307,6 +315,13 @@ void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth,
     }
 
     *ppEnd = p;
+}
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_14) {
+        ethernetif_notify_link();
+    }
 }
 
 static void pbuf_free_custom(struct pbuf *p)
@@ -575,6 +590,8 @@ ethernetif_init(struct netif *netif)
 void ethernetif_update_link(struct netif *netif)
 {
     int32_t link_state;
+
+    (void)YT8531C_ClearIT(&YT8531C, YT8531C_LINK_IT_MASK);
 
     link_state = YT8531C_GetLinkState(&YT8531C);
 

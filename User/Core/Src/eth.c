@@ -150,6 +150,7 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
     PB0     ------> ETH1_RXD2
     PC1     ------> ETH1_GTX_CLK
     PC2     ------> ETH1_TXD2
+    PA14    ------> ETH1_MDINT
     */
     GPIO_InitStruct.Pin = GPIO_PIN_11;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -165,7 +166,7 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
     GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_2;
+    GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_2;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -211,12 +212,21 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef* ethHandle)
     GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+    GPIO_InitStruct.Pin = GPIO_PIN_14;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /* USER CODE BEGIN ETH_MspInit 1 */
     IRQ_SetPriority(ETH1_IRQn, 5);
     IRQ_SetMode(ETH1_IRQn,
                 IRQ_MODE_TRIG_LEVEL | IRQ_MODE_TYPE_IRQ | IRQ_MODE_CPU_0);
     IRQ_Enable(ETH1_IRQn);
 
+    IRQ_SetPriority(EXTI14_IRQn, 5);
+    IRQ_SetMode(EXTI14_IRQn,
+                IRQ_MODE_TRIG_EDGE | IRQ_MODE_TYPE_IRQ | IRQ_MODE_CPU_0);
+    IRQ_Enable(EXTI14_IRQn);
   /* USER CODE END ETH_MspInit 1 */
   }
 }
