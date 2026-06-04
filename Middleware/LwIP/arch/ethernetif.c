@@ -206,31 +206,37 @@ static HAL_StatusTypeDef ethernetif_apply_mac_config(int32_t link_state)
 
     switch (link_state) {
     case YT8531C_STATUS_10MBITS_FULLDUPLEX:
+        mac_conf.PortSelect = ENABLE;
         mac_conf.Speed = ETH_SPEED_10M;
         mac_conf.DuplexMode = ETH_FULLDUPLEX_MODE;
         break;
 
     case YT8531C_STATUS_10MBITS_HALFDUPLEX:
+        mac_conf.PortSelect = ENABLE;
         mac_conf.Speed = ETH_SPEED_10M;
         mac_conf.DuplexMode = ETH_HALFDUPLEX_MODE;
         break;
 
     case YT8531C_STATUS_100MBITS_FULLDUPLEX:
+        mac_conf.PortSelect = ENABLE;
         mac_conf.Speed = ETH_SPEED_100M;
         mac_conf.DuplexMode = ETH_FULLDUPLEX_MODE;
         break;
 
     case YT8531C_STATUS_100MBITS_HALFDUPLEX:
+        mac_conf.PortSelect = ENABLE;
         mac_conf.Speed = ETH_SPEED_100M;
         mac_conf.DuplexMode = ETH_HALFDUPLEX_MODE;
         break;
 
     case YT8531C_STATUS_1000MBITS_FULLDUPLEX:
+        mac_conf.PortSelect = DISABLE;
         mac_conf.Speed = ETH_SPEED_1000M;
         mac_conf.DuplexMode = ETH_FULLDUPLEX_MODE;
         break;
 
     case YT8531C_STATUS_1000MBITS_HALFDUPLEX:
+        mac_conf.PortSelect = DISABLE;
         mac_conf.Speed = ETH_SPEED_1000M;
         mac_conf.DuplexMode = ETH_HALFDUPLEX_MODE;
         break;
