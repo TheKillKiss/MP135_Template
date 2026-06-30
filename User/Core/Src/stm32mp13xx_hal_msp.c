@@ -81,4 +81,23 @@ void HAL_MspInit(void)
 
 /* USER CODE BEGIN 1 */
 
+HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
+{
+#if defined(CORE_CA7)
+  if (TickPriority >= (1UL << 4)) {
+    return HAL_ERROR;
+  }
+
+  uwTickPrio = TickPriority;
+#else
+  UNUSED(TickPriority);
+#endif
+
+  /*
+   * The A7 generic timer is configured in SystemInit() and drives both
+   * HAL_IncTick() and OSTimeTick() from SecurePhysicalTimer_IRQHandler().
+   */
+  return HAL_OK;
+}
+
 /* USER CODE END 1 */
