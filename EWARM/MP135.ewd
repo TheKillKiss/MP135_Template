@@ -1704,7 +1704,7 @@
                 </option>
                 <option>
                     <name>MemFile</name>
-                    <state></state>
+                    <state>$TOOLKIT_DIR$\config\debugger\ST\STM32MP135D.ddf</state>
                 </option>
                 <option>
                     <name>RunToEnable</name>
@@ -1744,11 +1744,11 @@
                 </option>
                 <option>
                     <name>OCDynDriverList</name>
-                    <state>ARMSIM_ID</state>
+                    <state>STLINK_ID</state>
                 </option>
                 <option>
                     <name>OCLastSavedByProductVersion</name>
-                    <state></state>
+                    <state>9.70.1.13552</state>
                 </option>
                 <option>
                     <name>UseFlashLoader</name>
@@ -1772,7 +1772,7 @@
                 </option>
                 <option>
                     <name>FlashLoadersV3</name>
-                    <state></state>
+                    <state>$TOOLKIT_DIR$/config/flashloader/</state>
                 </option>
                 <option>
                     <name>OCImagesSuppressCheck1</name>
@@ -1840,7 +1840,7 @@
                 </option>
                 <option>
                     <name>OCMulticoreNrOfCores</name>
-                    <state></state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>OCMulticoreWorkspace</name>
@@ -1920,7 +1920,7 @@
                 </option>
                 <option>
                     <name>VectorTableExpr</name>
-                    <state>__vector_table</state>
+                    <state>__vector</state>
                 </option>
             </data>
         </settings>
@@ -2852,7 +2852,7 @@
                 <option>
                     <name>CCSTLinkResetList</name>
                     <version>3</version>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>CCCpuClockEdit</name>
@@ -2958,7 +2958,7 @@
                 </option>
                 <option>
                     <name>CCSTLinkTargetVoltage</name>
-                    <state>###Uninitialized###</state>
+                    <state>3.3</state>
                 </option>
             </data>
         </settings>
